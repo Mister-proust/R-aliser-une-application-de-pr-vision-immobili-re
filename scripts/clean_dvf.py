@@ -225,7 +225,7 @@ if __name__ == "__main__":
     df = load_dvf_file(file_path)
     df_cleaned = clean_dvf_data(df)
     df = df_cleaned.head(50)
-    df.to_csv(os.path.join(DATA_DIR, "test_clean_dvf.csv"), index=False, sep=';')
+    df_cleaned.to_csv(os.path.join(DATA_DIR, "test_clean_dvf.csv"), index=False, sep=';')
     print(len(df))
     start_time = time.time()
     end_time = time.time()
