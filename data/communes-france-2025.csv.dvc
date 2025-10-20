@@ -1,0 +1,5 @@
+outs:
+- md5: 16cc53b5f70730eb2973e7e33609e1f3
+  size: 17131515
+  hash: md5
+  path: communes-france-2025.csv
