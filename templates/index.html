@@ -28,18 +28,67 @@
 
               <form id="form" onsubmit="return false;">
                 <div class="mb-3">
-                  <label for="commune" class="form-label">Commune</label>
-                  <input id="commune" class="form-control" placeholder="Ex: Paris" />
+                  <label for="type_voie_encodee" class="form-label">Type de voie (encode)</label>
+                  <input id="type_voie_encodee" class="form-control" placeholder="Ex: 1" type="number" />
+                </div>
+
+                <div class="mb-3">
+                  <label for="type_local_encodee" class="form-label">Type local (encode)</label>
+                  <input id="type_local_encodee" class="form-control" placeholder="Ex: 1" type="number" />
                 </div>
 
                 <div class="row">
                   <div class="col-md-6 mb-3">
-                    <label for="surface" class="form-label">Surface (m²)</label>
-                    <input id="surface" class="form-control" placeholder="Ex: 45" type="number" min="0" />
+                    <label for="Surface terrain" class="form-label">Surface terrain (m²)</label>
+                    <input id="Surface terrain" class="form-control" placeholder="Ex: 0" type="number" min="0" step="any" />
                   </div>
                   <div class="col-md-6 mb-3">
-                    <label for="rooms" class="form-label">Pièces</label>
-                    <input id="rooms" class="form-control" placeholder="Ex: 2" type="number" min="0" />
+                    <label for="Surface reelle bati" class="form-label">Surface reelle bati (m²)</label>
+                    <input id="Surface reelle bati" class="form-control" placeholder="Ex: 45" type="number" min="0" step="any" />
+                  </div>
+                </div>
+
+                <div class="row">
+                  <div class="col-md-6 mb-3">
+                    <label for="Nombre pieces principales" class="form-label">Nombre pieces principales</label>
+                    <input id="Nombre pieces principales" class="form-control" placeholder="Ex: 2" type="number" min="0" />
+                  </div>
+                  <div class="col-md-6 mb-3">
+                    <label for="densite" class="form-label">Densite</label>
+                    <input id="densite" class="form-control" placeholder="Ex: 1000" type="number" min="0" step="any" />
+                  </div>
+                </div>
+
+                <div class="row">
+                  <div class="col-md-6 mb-3">
+                    <label for="population" class="form-label">Population</label>
+                    <input id="population" class="form-control" placeholder="Ex: 50000" type="number" min="0" />
+                  </div>
+                  <div class="col-md-6 mb-3">
+                    <label for="superficie_km2" class="form-label">Superficie (km²)</label>
+                    <input id="superficie_km2" class="form-control" placeholder="Ex: 10.5" type="number" min="0" step="any" />
+                  </div>
+                </div>
+
+                <div class="row">
+                  <div class="col-md-6 mb-3">
+                    <label for="Valeur fonciere" class="form-label">Valeur fonciere (EUR) - Si inconnu mettez 0</label>
+                    <input id="Valeur fonciere" class="form-control" placeholder="Ex: 120000" type="number" min="0" step="any" />
+                  </div>
+                  <div class="col-md-6 mb-3">
+                    <label for="altitude_moyenne" class="form-label">Altitude moyenne (m)</label>
+                    <input id="altitude_moyenne" class="form-control" placeholder="Ex: 35" type="number" step="any" />
+                  </div>
+                </div>
+
+                <div class="row">
+                  <div class="col-md-6 mb-3">
+                    <label for="latitude_centre" class="form-label">Latitude centre</label>
+                    <input id="latitude_centre" class="form-control" placeholder="Ex: 48.8566" type="number" step="any" />
+                  </div>
+                  <div class="col-md-6 mb-3">
+                    <label for="longitude_centre" class="form-label">Longitude centre</label>
+                    <input id="longitude_centre" class="form-control" placeholder="Ex: 2.3522" type="number" step="any" />
                   </div>
                 </div>
 
@@ -97,29 +146,49 @@
 
       document.getElementById('predict').addEventListener('click', async (e)=>{
         e.preventDefault();
-        const commune = document.getElementById('commune').value;
-        const surface = document.getElementById('surface').value;
-        const rooms = document.getElementById('rooms').value;
         const out = document.getElementById('result');
         out.textContent = 'Calcul en cours...';
         try{
-          const payload = { commune, surface, rooms };
-          // Decide: call protected /predict with token if available, otherwise call public /predict-public
-          const token = getSavedToken();
-          let data;
-          if(token){
-            const res = await fetch('/predict', { method:'POST', headers: { 'Content-Type':'application/json', 'Authorization': 'Bearer ' + token }, body: JSON.stringify(payload) });
-            if(!res.ok) throw new Error('Erreur API: ' + res.status);
-            data = await res.json();
-          } else {
-            // No token: call the protected route will fail; instead we still call /predict to show behavior
-            const res = await fetch('/predict', { method:'POST', headers: { 'Content-Type':'application/json' }, body: JSON.stringify(payload) });
-            if(!res.ok){
-              const txt = await res.text();
-              throw new Error('API non autorisée: ' + res.status + ' - ' + txt);
-            }
-            data = await res.json();
+          // list of exact column names expected by the model
+          const columns = ["type_voie_encodee", "type_local_encodee", "Surface terrain", "Surface reelle bati", "Nombre pieces principales", "densite", "population", "superficie_km2", "Valeur fonciere", "altitude_moyenne", "latitude_centre", "longitude_centre"];
+
+          // Helper to read and coerce numeric inputs (returns number or null)
+          function readNumber(id){
+            const el = document.getElementById(id);
+            if(!el) return null;
+            const v = el.value;
+            if(v === null || v === undefined || v === "") return null;
+            const n = Number(v);
+            return Number.isFinite(n) ? n : null;
           }
+
+          // Build payload using exact keys
+          const payload = {};
+          // Numeric fields
+          payload["type_voie_encodee"] = readNumber('type_voie_encodee') ?? 0;
+          payload["type_local_encodee"] = readNumber('type_local_encodee') ?? 0;
+          payload["Surface terrain"] = readNumber('Surface terrain') ?? 0;
+          payload["Surface reelle bati"] = readNumber('Surface reelle bati') ?? 0;
+          payload["Nombre pieces principales"] = readNumber('Nombre pieces principales') ?? 0;
+          payload["densite"] = readNumber('densite') ?? 0;
+          payload["population"] = readNumber('population') ?? 0;
+          payload["superficie_km2"] = readNumber('superficie_km2') ?? 0;
+          payload["Valeur fonciere"] = readNumber('Valeur fonciere') ?? 0;
+          payload["altitude_moyenne"] = readNumber('altitude_moyenne') ?? 0;
+          payload["latitude_centre"] = readNumber('latitude_centre') ?? 0;
+          payload["longitude_centre"] = readNumber('longitude_centre') ?? 0;
+
+          // Decide which endpoint: /predict requires token
+          const token = getSavedToken();
+          const headers = { 'Content-Type': 'application/json' };
+          if(token) headers['Authorization'] = 'Bearer ' + token;
+
+          const res = await fetch('/predict', { method: 'POST', headers, body: JSON.stringify(payload) });
+          if(!res.ok){
+            const txt = await res.text();
+            throw new Error('API error ' + res.status + ': ' + txt);
+          }
+          const data = await res.json();
           out.innerHTML = `<pre>${JSON.stringify(data, null, 2)}</pre>`;
         }catch(err){
           out.textContent = 'Erreur: ' + err.message;

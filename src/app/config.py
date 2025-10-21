@@ -13,3 +13,4 @@ PORT = 8000
 RELOAD = True
 # Simple API token for a lightweight auth. Can be overridden with the API_TOKEN env var.
 API_TOKEN = os.getenv("API_TOKEN", "secret-token")
+MODEL_PATH = Path(__file__).parent.parent.parent / "data" / "models" / "xgb_model.pkl"

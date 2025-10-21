@@ -20,3 +20,19 @@ stages:
       hash: md5
       md5: 25295c9e9cec34fb4204650b8853762a
       size: 46963374
+  train_model:
+    cmd: python scripts/model.py
+    deps:
+    - path: data/clean_dvf.csv
+      hash: md5
+      md5: 25295c9e9cec34fb4204650b8853762a
+      size: 46963374
+    - path: scripts/model.py
+      hash: md5
+      md5: f6ae20f058a8e9286200b7e41d9eaefd
+      size: 2576
+    outs:
+    - path: data/models/xgb_pipeline.pkl
+      hash: md5
+      md5: aaa7893ffb594edd543b20077fa9bada
+      size: 1420318

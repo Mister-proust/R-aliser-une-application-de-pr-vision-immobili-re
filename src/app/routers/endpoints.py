@@ -3,7 +3,7 @@ from fastapi import APIRouter, HTTPException, Depends, Query, UploadFile, File, 
 from fastapi.responses import JSONResponse
 from typing import Annotated, Dict, Any, List, Optional
 from datetime import timedelta
-
+import pickle
 from fastapi.security import OAuth2PasswordRequestForm
 import pandas as pd
 import app.config as config
@@ -30,6 +30,25 @@ def verify_token(authorization: Optional[str] = Header(None)):
 @router.get("/health", tags=["Health"])
 async def health():
     return {"status": "ok"}
+
+def prediction_model(payload: Dict[str, Any]):
+    """
+    charge le fichier pickle, et lance une prédiction sur le bien donné en entrée
+    
+    Args:
+        payload (Dict[str, Any]): payload JSON avec les caractéristiques du bien à estimer
+    
+    Returns:
+        Dict[str, Any]: résultat de la prédiction
+    """
+    columns_list = ["type_voie_encodee", "type_local_encodee", "Surface terrain", "Surface reelle bati", "Nombre pieces principales", "densite", "population", "superficie_km2", "Valeur fonciere", "altitude_moyenne", "latitude_centre", "longitude_centre"]
+    model_path = config.MODEL_PATH
+    with open(model_path, "rb") as f:
+        model = pickle.load(f)
+    input_df = pd.DataFrame([payload], columns=columns_list)
+    prediction = model.predict(input_df)
+    return {"estimated_price": prediction[0], "currency": "EUR", "input": payload}
+    
 
 def perform_prediction(payload: Dict[str, Any]) -> Dict[str, Any]:
     """

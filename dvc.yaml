@@ -8,3 +8,10 @@ stages:
     - scripts/clean_dvf.py
     outs:
     - data/clean_dvf.csv
+  train_model:
+    cmd: python scripts/model.py
+    deps:
+    - data/clean_dvf.csv
+    - scripts/model.py
+    outs:
+    - data/models/xgb_pipeline.pkl

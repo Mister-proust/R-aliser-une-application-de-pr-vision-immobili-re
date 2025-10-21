@@ -9,7 +9,7 @@ venv\Scripts\activate  # Sur Windows (source venv/bin/activate sur macOS/Linux)
 pip install -r requirements.txt
 ```
 
-### Préparer les données avec DVC
+### Préparer les données et le modèle avec DVC
 
 S'assurer d'avoir les deux fichiers de données originaux dans le dossier data: `ValeursFoncieres-2025-S1.txt` et `communes-france-2025.csv`
 
