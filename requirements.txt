@@ -1,4 +1,5 @@
 dvc
+dvc[ssh]
 pandas
 
 # FastAPI and test dependencies
@@ -7,3 +8,10 @@ uvicorn[standard]
 pytest
 jinja2
 httpx
+pandas
+
+# pour le notebook
+missingno
+seaborn
+matplotlib
+

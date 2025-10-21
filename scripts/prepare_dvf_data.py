@@ -1,13 +1,7 @@
-
-# data_process/fill_dvf.py
-
-import os
-import glob
-import pandas as pd
-import time
-from typing import Optional
-import logging
 import sys
+import os
+import pandas as pd
+import logging
 
 logging.basicConfig(
     level=logging.INFO,
@@ -20,8 +14,6 @@ logging.basicConfig(
 )
 
 logger = logging.getLogger(__name__)
-
-DATA_DIR = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'data'))
 
 def load_dvf_file(file_path: str) -> pd.DataFrame:
     """
@@ -39,7 +31,6 @@ def load_dvf_file(file_path: str) -> pd.DataFrame:
     if not os.path.exists(file_path):
         raise FileNotFoundError(f"Le fichier {file_path} n'existe pas.")
     # Chargement du fichier DVF
-    logger.info(f"Chargement du fichier DVF depuis {file_path}...")
 
     col_to_keep = [
         'Date mutation',
@@ -167,7 +158,8 @@ def clean_dvf_data(df: pd.DataFrame) -> pd.DataFrame:
     
     return df
 
-def save_dvf__df_to_csv(df: pd.DataFrame, output_path: str) -> None:
+
+def save_dvf_df_to_csv(df: pd.DataFrame, output_path: str) -> None:
     """
     Sauvegarde le DataFrame DVF dans un fichier CSV.
     
@@ -183,55 +175,14 @@ def save_dvf__df_to_csv(df: pd.DataFrame, output_path: str) -> None:
         logger.info(f"Le fichier a été sauvegardé sous {output_path}")
     except Exception as e:
         logger.error(f"Erreur lors de la sauvegarde du fichier CSV : {e}")
-        
-        
-
-def fill_dvf(idx: Optional[int] = None):
-    """
-    Fonction principale pour charger, nettoyer et enregistrer les données DVF dans la base de données PostgreSQL.
-    Elle traite les fichiers contenu dans {DATA_DIR} qui commencent par "ValeursFoncieres-" et se terminent par ".txt".
-    Elle charge les données dans un DataFrame, les nettoie, puis les enregistre dans la base de données postgreSQL.
-    
-    Args:
-        idx (Optional[int]): Index à partir duquel reprendre le traitement, si None on commence
-        à 0
-    Returns:
-        None
-    """
-    
-    start_time = time.time()
-    intermediate_time = start_time
-    for file in os.listdir(DATA_DIR):
-        if file.startswith("ValeursFoncieres") & file.endswith(".txt"):
-            
-            file_path = os.path.join(DATA_DIR, file)
-            df = load_dvf_file(file_path)
-            logger.info(f"{file} : Chargement du fichier DVF terminé en {(time.time() - intermediate_time):.2f} secondes. Nombre de lignes : {len(df)}")
-            df_cleaned = clean_dvf_data(df)
-            logger.info(f"{file} : Nettoyage du DataFrame terminé en {(time.time() - intermediate_time):.2f} secondes. Nombre de lignes après nettoyage : {len(df_cleaned)}")
-            intermediate_time = time.time()
-            logger.info(f"{file} : Chargement en Base de Données terminé en {(intermediate_time - start_time):.2f} secondes.")
-    logger.info("\nTous les fichiers DVF ont été traités et sauvegardés avec succès !")
-    logger.info("Fin du script.")
-    end_time = time.time()
-    logger.info(f"\nTemps total: {(end_time - start_time):.2f} secondes")
 
 
 if __name__ == "__main__":
-    
-    # test retrieve_id_ban()
-    file = "ValeursFoncieres-2025-S1.txt"
-    file_path = os.path.join(DATA_DIR, file)
-    df = load_dvf_file(file_path)
-    df_cleaned = clean_dvf_data(df)
-    df = df_cleaned.head(50)
-    df_cleaned.to_csv(os.path.join(DATA_DIR, "test_clean_dvf.csv"), index=False, sep=';')
-    print(len(df))
-    start_time = time.time()
-    end_time = time.time()
-    print(f"Temps total pour le test : {(end_time - start_time):.2f} secondes")
-
-
-
-
-
+    filename = sys.argv[1]
+    df = load_dvf_file(filename)
+    df = clean_dvf_data(df)
+    # Retirer l'extension existante (si présente) avant d'ajouter .csv et le path
+    file = os.path.basename(filename)
+    base, _ = os.path.splitext(file)
+    output_filename = os.path.join('data', 'prepared', base + ".csv")
+    save_dvf_df_to_csv(df, output_filename)
