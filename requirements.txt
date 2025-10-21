@@ -1,10 +1,14 @@
 dvc
+dvc[ssh]
 pandas
 
-
-# dvc : versionning des donnees
-dvc
-dvc[ssh]
+# FastAPI and test dependencies
+fastapi
+uvicorn[standard]
+pytest
+jinja2
+httpx
+pandas
 
 # pour le notebook
 missingno
