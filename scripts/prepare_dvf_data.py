@@ -170,10 +170,6 @@ def save_dvf_df_to_csv(df: pd.DataFrame, output_path: str) -> None:
 
     # On sauvegarde le DataFrame dans un fichier CSV
     try:
-        # S'assurer que le répertoire de sortie existe
-        out_dir = os.path.dirname(output_path)
-        if out_dir:
-            os.makedirs(out_dir, exist_ok=True)
 
         df.to_csv(output_path, index=False, sep=';')
         logger.info(f"Le fichier a été sauvegardé sous {output_path}")
