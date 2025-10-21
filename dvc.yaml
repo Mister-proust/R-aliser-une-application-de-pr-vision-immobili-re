@@ -1,0 +1,9 @@
+stages:
+  prepare:
+    cmd: python scripts/prepare_dvf_datas.py data/ValeursFoncieres-2025-S1.txt
+    deps:
+    - data/ValeursFoncieres-2025-S1.txt
+    - scripts/prepare_dvf_datas.py
+    outs:
+    - data/prepared
+
