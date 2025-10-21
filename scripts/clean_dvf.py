@@ -97,9 +97,21 @@ def load_dvf_file(file_path: str) -> pd.DataFrame:
     )
     return df
 
-def clean_dvf_data(df: pd.DataFrame) -> pd.DataFrame:
+def load_communes_file(file_path_communes: str) -> pd.DataFrame:
+    df = pd.DataFrame()
+    # Vérification de l'existence du fichier
+    if not os.path.exists(file_path_communes):
+        raise FileNotFoundError(f"Le fichier {file_path_communes} n'existe pas.")
+    # Chargement du fichier DVF
+    logger.info(f"Chargement du fichier DVF depuis {file_path_communes}...")
+    df_communes = pd.read_csv(
+        file_path_communes,
+        sep=",")
+    return df_communes
+
+def clean_dvf_data(df: pd.DataFrame, df_communes: pd.DataFrame) -> pd.DataFrame:
     """
-    Nettoie le DataFrame DVF.
+    Nettoie le DataFrame DVF et le df_communes.
     
     Parameters:
         df (pd.DataFrame): DataFrame contenant les données DVF
@@ -164,6 +176,20 @@ def clean_dvf_data(df: pd.DataFrame) -> pd.DataFrame:
 
     # On va recréer l'index du dataframe pour qu'il soit propre
     df.reset_index(drop=True, inplace=True)
+
+    df["code_insee"]= (
+    df["Code departement"].astype(str).str.zfill(2) + 
+    df["Code commune"].astype(str).str.zfill(3)
+    )
+
+    df["code_insee"] = df["code_insee"].astype(str)
+
+    df_communes= df_communes[["code_insee", "nom_standard_majuscule", "population", "superficie_km2", "densite", "altitude_moyenne", "latitude_centre", "longitude_centre"]]
+    df_communes["code_insee"] = df_communes["code_insee"].astype(str)
+
+    df= pd.merge(df, df_communes, on = "code_insee", how = "left")
+    df = df.dropna(subset = "densite")
+    df = df.dropna(subset = "latitude_centre")
     
     return df
 
@@ -183,49 +209,20 @@ def save_dvf__df_to_csv(df: pd.DataFrame, output_path: str) -> None:
         logger.info(f"Le fichier a été sauvegardé sous {output_path}")
     except Exception as e:
         logger.error(f"Erreur lors de la sauvegarde du fichier CSV : {e}")
-        
-        
 
-def fill_dvf(idx: Optional[int] = None):
-    """
-    Fonction principale pour charger, nettoyer et enregistrer les données DVF dans la base de données PostgreSQL.
-    Elle traite les fichiers contenu dans {DATA_DIR} qui commencent par "ValeursFoncieres-" et se terminent par ".txt".
-    Elle charge les données dans un DataFrame, les nettoie, puis les enregistre dans la base de données postgreSQL.
-    
-    Args:
-        idx (Optional[int]): Index à partir duquel reprendre le traitement, si None on commence
-        à 0
-    Returns:
-        None
-    """
-    
-    start_time = time.time()
-    intermediate_time = start_time
-    for file in os.listdir(DATA_DIR):
-        if file.startswith("ValeursFoncieres") & file.endswith(".txt"):
-            
-            file_path = os.path.join(DATA_DIR, file)
-            df = load_dvf_file(file_path)
-            logger.info(f"{file} : Chargement du fichier DVF terminé en {(time.time() - intermediate_time):.2f} secondes. Nombre de lignes : {len(df)}")
-            df_cleaned = clean_dvf_data(df)
-            logger.info(f"{file} : Nettoyage du DataFrame terminé en {(time.time() - intermediate_time):.2f} secondes. Nombre de lignes après nettoyage : {len(df_cleaned)}")
-            intermediate_time = time.time()
-            logger.info(f"{file} : Chargement en Base de Données terminé en {(intermediate_time - start_time):.2f} secondes.")
-    logger.info("\nTous les fichiers DVF ont été traités et sauvegardés avec succès !")
-    logger.info("Fin du script.")
-    end_time = time.time()
-    logger.info(f"\nTemps total: {(end_time - start_time):.2f} secondes")
 
 
 if __name__ == "__main__":
     
     # test retrieve_id_ban()
     file = "ValeursFoncieres-2025-S1.txt"
+    file_communes = "communes-france-2025.csv"
     file_path = os.path.join(DATA_DIR, file)
+    file_path_communes = os.path.join(DATA_DIR, file_communes)
     df = load_dvf_file(file_path)
-    df_cleaned = clean_dvf_data(df)
-    df = df_cleaned.head(50)
-    df.to_csv(os.path.join(DATA_DIR, "test_clean_dvf.csv"), index=False, sep=';')
+    df_communes = load_communes_file(file_path_communes)
+    df_cleaned = clean_dvf_data(df, df_communes)
+    df_cleaned.to_csv(os.path.join(DATA_DIR, "test_clean_dvf.csv"), index=False, sep=';')
     print(len(df))
     start_time = time.time()
     end_time = time.time()
