@@ -1,12 +1,10 @@
 stages:
   prepare:
     cmd: |
-      python scripts/prepare_dvf_data.py data/ValeursFoncieres-2025-S1.txt
-      python scripts/prepare_communes_data.py data/communes-france-2025.csv
+      python scripts/clean_dvf.py data/ValeursFoncieres-2025-S1.txt data/communes-france-2025.csv
     deps:
     - data/ValeursFoncieres-2025-S1.txt
     - data/communes-france-2025.csv
-    - scripts/prepare_dvf_data.py
-    - scripts/prepare_communes_data.py
+    - scripts/clean_dvf.py
     outs:
-    - data/prepared
+    - data/clean_dvf.csv

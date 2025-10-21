@@ -12,7 +12,7 @@ from sklearn.preprocessing import LabelEncoder
 # Encoder les colonnes suivantes : "Type de voie", "Voie", "code_insee"
 
 
-df = pd.read_csv("../data/test_clean_dvf.csv", sep=';')
+df = pd.read_csv("../data/clean_dvf.csv", sep=';')
 df = df[df["Valeur fonciere"] <= 800000].reset_index(drop=True)
 df = df[df["Valeur fonciere"] >= 50000].reset_index(drop=True)
 le = LabelEncoder()
