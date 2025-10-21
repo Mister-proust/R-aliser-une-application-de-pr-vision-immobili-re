@@ -33,12 +33,7 @@ def load_communes_file(file_path: str) -> pd.DataFrame:
     # Chargement du fichier DVF
 
     col_to_keep = [
-        'code_insee',
-        'nom_standard',
-        'population',
-        'superficie_km2',
-        'densite',
-        'niveau_equipements_services'
+       "code_insee", "nom_standard_majuscule", "population", "superficie_km2", "densite", "altitude_moyenne", "latitude_centre", "longitude_centre","niveau_equipements_services"
     ]
     
     col_type = {
@@ -47,6 +42,9 @@ def load_communes_file(file_path: str) -> pd.DataFrame:
         'population' : 'Int32',
         'superficie_km2' : 'Int32',
         'densite' : 'float32',
+        'altitude_moyenne' : 'float32',
+        'latitude_centre' : 'float32',
+        'longitude_centre' : 'float32',
         'niveau_equipements_services' : 'float32'
     }
     
@@ -73,6 +71,10 @@ def clean_communes_data(df: pd.DataFrame) -> pd.DataFrame:
 
     # On remplace les densites naN par 0
     df.loc[df['densite'].isna(), 'densite'] = 0
+    # idem pour altitude_moyenne, latitude_centre, longitude_centre
+    df.loc[df['altitude_moyenne'].isna(), 'altitude_moyenne'] = 0
+    df.loc[df['latitude_centre'].isna(), 'latitude_centre'] = 0
+    df.loc[df['longitude_centre'].isna(), 'longitude_centre'] = 0
     # 132 communes ont 'niveau_equipements_services' à NaN, on les remplace par la moyenne 2.0
     df.loc[df['niveau_equipements_services'].isna(), 'niveau_equipements_services'] = 2.0
     # On supprime les doublons s'il y en a. Ici il n'y en a pas mais si jamais un nouveau fichhier en contient...
@@ -91,6 +93,10 @@ def save_df_to_csv(df: pd.DataFrame, output_path: str) -> None:
 
     # On sauvegarde le DataFrame dans un fichier CSV
     try:
+        # S'assurer que le répertoire de sortie existe
+        out_dir = os.path.dirname(output_path)
+        if out_dir:
+            os.makedirs(out_dir, exist_ok=True)
 
         df.to_csv(output_path, index=False, sep=';')
         logger.info(f"Le fichier a été sauvegardé sous {output_path}")

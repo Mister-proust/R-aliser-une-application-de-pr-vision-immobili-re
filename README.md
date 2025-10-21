@@ -9,6 +9,12 @@ venv\Scripts\activate  # Sur Windows (source venv/bin/activate sur macOS/Linux)
 pip install -r requirements.txt
 ```
 
+### Préparer les données avec DVC
+
+```bash
+dvc repro
+```
+
 ### Lancer l'application
 
 ```bash

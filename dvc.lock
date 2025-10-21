@@ -1,0 +1,28 @@
+schema: '2.0'
+stages:
+  prepare:
+    cmd: "python scripts/prepare_dvf_data.py data/ValeursFoncieres-2025-S1.txt\npython
+      scripts/prepare_communes_data.py data/communes-france-2025.csv\n"
+    deps:
+    - path: data/ValeursFoncieres-2025-S1.txt
+      hash: md5
+      md5: 00bdcd2605b6cd8fed35ec8d60024d71
+      size: 184978486
+    - path: data/communes-france-2025.csv
+      hash: md5
+      md5: 16cc53b5f70730eb2973e7e33609e1f3
+      size: 17131515
+    - path: scripts/prepare_communes_data.py
+      hash: md5
+      md5: f04747c3bd79af4dd789d697fbb124b1
+      size: 4165
+    - path: scripts/prepare_dvf_data.py
+      hash: md5
+      md5: 7ff3b11830d0f9d84ebe311bc2bb92ea
+      size: 7718
+    outs:
+    - path: data/prepared
+      hash: md5
+      md5: d90229e12707f15271735888a36ee813.dir
+      size: 36859322
+      nfiles: 2
