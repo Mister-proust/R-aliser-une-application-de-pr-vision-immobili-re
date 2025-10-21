@@ -11,6 +11,9 @@ pip install -r requirements.txt
 
 ### Préparer les données avec DVC
 
+S'assurer d'avoir les deux fichiers de données originaux dans le dossier data: `ValeursFoncieres-2025-S1.txt` et `communes-france-2025.csv`
+
+Puis pour préparer les données:
 ```bash
 dvc repro
 ```
