@@ -28,67 +28,40 @@
 
               <form id="form" onsubmit="return false;">
                 <div class="mb-3">
-                  <label for="type_voie_encodee" class="form-label">Type de voie (encode)</label>
-                  <input id="type_voie_encodee" class="form-control" placeholder="Ex: 1" type="number" />
-                </div>
-
-                <div class="mb-3">
-                  <label for="type_local_encodee" class="form-label">Type local (encode)</label>
-                  <input id="type_local_encodee" class="form-control" placeholder="Ex: 1" type="number" />
+                  <label for="commune" class="form-label">Commune (nom) ou code INSEE</label>
+                  <input id="commune" class="form-control" placeholder="Ex: Paris ou 75056" />
                 </div>
 
                 <div class="row">
                   <div class="col-md-6 mb-3">
-                    <label for="Surface terrain" class="form-label">Surface terrain (m²)</label>
-                    <input id="Surface terrain" class="form-control" placeholder="Ex: 0" type="number" min="0" step="any" />
+                    <label for="type_voie" class="form-label">Type de voie</label>
+                    <select id="type_voie" class="form-select">
+                      <option value="">(Chargement...)</option>
+                    </select>
                   </div>
                   <div class="col-md-6 mb-3">
-                    <label for="Surface reelle bati" class="form-label">Surface reelle bati (m²)</label>
-                    <input id="Surface reelle bati" class="form-control" placeholder="Ex: 45" type="number" min="0" step="any" />
-                  </div>
-                </div>
-
-                <div class="row">
-                  <div class="col-md-6 mb-3">
-                    <label for="Nombre pieces principales" class="form-label">Nombre pieces principales</label>
-                    <input id="Nombre pieces principales" class="form-control" placeholder="Ex: 2" type="number" min="0" />
-                  </div>
-                  <div class="col-md-6 mb-3">
-                    <label for="densite" class="form-label">Densite</label>
-                    <input id="densite" class="form-control" placeholder="Ex: 1000" type="number" min="0" step="any" />
+                    <label for="type_local" class="form-label">Type local</label>
+                    <select id="type_local" class="form-select">
+                      <option value="">(Chargement...)</option>
+                    </select>
                   </div>
                 </div>
 
                 <div class="row">
                   <div class="col-md-6 mb-3">
-                    <label for="population" class="form-label">Population</label>
-                    <input id="population" class="form-control" placeholder="Ex: 50000" type="number" min="0" />
+                    <label for="surface_terrain" class="form-label">Surface terrain (m²)</label>
+                      <input id="surface_terrain" class="form-control" placeholder="Ex: 0" type="number" min="0" step="any" />
                   </div>
                   <div class="col-md-6 mb-3">
-                    <label for="superficie_km2" class="form-label">Superficie (km²)</label>
-                    <input id="superficie_km2" class="form-control" placeholder="Ex: 10.5" type="number" min="0" step="any" />
-                  </div>
-                </div>
-
-                <div class="row">
-                  <div class="col-md-6 mb-3">
-                    <label for="Valeur fonciere" class="form-label">Valeur fonciere (EUR) - Si inconnu mettez 0</label>
-                    <input id="Valeur fonciere" class="form-control" placeholder="Ex: 120000" type="number" min="0" step="any" />
-                  </div>
-                  <div class="col-md-6 mb-3">
-                    <label for="altitude_moyenne" class="form-label">Altitude moyenne (m)</label>
-                    <input id="altitude_moyenne" class="form-control" placeholder="Ex: 35" type="number" step="any" />
+                    <label for="surface_reelle_bati" class="form-label">Surface reelle bati (m²)</label>
+                    <input id="surface_reelle_bati" class="form-control" placeholder="Ex: 45" type="number" min="0" step="any" />
                   </div>
                 </div>
 
                 <div class="row">
                   <div class="col-md-6 mb-3">
-                    <label for="latitude_centre" class="form-label">Latitude centre</label>
-                    <input id="latitude_centre" class="form-control" placeholder="Ex: 48.8566" type="number" step="any" />
-                  </div>
-                  <div class="col-md-6 mb-3">
-                    <label for="longitude_centre" class="form-label">Longitude centre</label>
-                    <input id="longitude_centre" class="form-control" placeholder="Ex: 2.3522" type="number" step="any" />
+                    <label for="nombre_pieces_principales" class="form-label">Nombre pieces principales</label>
+                    <input id="nombre_pieces_principales" class="form-control" placeholder="Ex: 2" type="number" min="0" />
                   </div>
                 </div>
 
@@ -130,9 +103,30 @@
       }
 
       // Token helpers
-      const tokenInput = document.getElementById('tokenInput');
+          const tokenInput = document.getElementById('tokenInput');
       const saveTokenBtn = document.getElementById('saveToken');
       const clearTokenBtn = document.getElementById('clearToken');
+
+      // Populate selects on load
+      async function populateSelects(){
+        try{
+          const res = await fetch('/meta/options');
+          if(!res.ok) return;
+          const data = await res.json();
+          const tv = document.getElementById('type_voie');
+          const tl = document.getElementById('type_local');
+          tv.innerHTML = '';
+          tl.innerHTML = '';
+          const addOpt = (el, v) => { const o = document.createElement('option'); o.value = v; o.text = v; el.appendChild(o); };
+          addOpt(tv, '');
+          addOpt(tl, '');
+          (data.type_voie || []).forEach(v => addOpt(tv, v));
+          (data.type_local || []).forEach(v => addOpt(tl, v));
+        }catch(e){
+          // ignore fail
+        }
+      }
+      populateSelects();
 
       function getSavedToken(){ return localStorage.getItem('api_token') || ''; }
       function setSavedToken(t){ localStorage.setItem('api_token', t); }
@@ -149,10 +143,7 @@
         const out = document.getElementById('result');
         out.textContent = 'Calcul en cours...';
         try{
-          // list of exact column names expected by the model
-          const columns = ["type_voie_encodee", "type_local_encodee", "Surface terrain", "Surface reelle bati", "Nombre pieces principales", "densite", "population", "superficie_km2", "Valeur fonciere", "altitude_moyenne", "latitude_centre", "longitude_centre"];
-
-          // Helper to read and coerce numeric inputs (returns number or null)
+          // Helper to read and coerce numeric inputs (returns string or number)
           function readNumber(id){
             const el = document.getElementById(id);
             if(!el) return null;
@@ -162,21 +153,22 @@
             return Number.isFinite(n) ? n : null;
           }
 
-          // Build payload using exact keys
+          // Build payload with property-level fields only. Backend will enrich using communes CSV and encoders.
           const payload = {};
-          // Numeric fields
-          payload["type_voie_encodee"] = readNumber('type_voie_encodee') ?? 0;
-          payload["type_local_encodee"] = readNumber('type_local_encodee') ?? 0;
-          payload["Surface terrain"] = readNumber('Surface terrain') ?? 0;
-          payload["Surface reelle bati"] = readNumber('Surface reelle bati') ?? 0;
-          payload["Nombre pieces principales"] = readNumber('Nombre pieces principales') ?? 0;
-          payload["densite"] = readNumber('densite') ?? 0;
-          payload["population"] = readNumber('population') ?? 0;
-          payload["superficie_km2"] = readNumber('superficie_km2') ?? 0;
-          payload["Valeur fonciere"] = readNumber('Valeur fonciere') ?? 0;
-          payload["altitude_moyenne"] = readNumber('altitude_moyenne') ?? 0;
-          payload["latitude_centre"] = readNumber('latitude_centre') ?? 0;
-          payload["longitude_centre"] = readNumber('longitude_centre') ?? 0;
+          // commune may be name or code_insee
+          const communeVal = document.getElementById('commune').value;
+          // If commune looks numeric and length matches INSEE (5), send as code_insee
+          const possibleCode = communeVal ? communeVal.trim() : '';
+          if(possibleCode && /^\d{5}$/.test(possibleCode)){
+            payload['code_insee'] = possibleCode;
+          } else {
+            payload['commune'] = possibleCode;
+          }
+          payload['type_voie'] = (document.getElementById('type_voie').value || '').trim();
+          payload['type_local'] = (document.getElementById('type_local').value || '').trim();
+          payload['surface_terrain'] = readNumber('surface_terrain');
+          payload['surface_reelle_bati'] = readNumber('surface_reelle_bati');
+          payload['nombre_pieces_principales'] = readNumber('nombre_pieces_principales');
 
           // Decide which endpoint: /predict requires token
           const token = getSavedToken();
@@ -189,7 +181,16 @@
             throw new Error('API error ' + res.status + ': ' + txt);
           }
           const data = await res.json();
-          out.innerHTML = `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+          // Preferred output: highlight the estimated_price
+          if(data && (data.estimated_price || (data.result && data.result.estimated_price))){
+            const price = data.estimated_price ?? (data.result && data.result.estimated_price);
+            out.innerHTML = `<div class="text-center"><h2 style="font-size:2.2rem; font-weight:700;">${Number(price).toLocaleString('fr-FR')} €</h2><div class="text-muted small mt-2">Estimation</div></div>`;
+          } else if(data && data.result && data.result.estimated_price){
+            const price = data.result.estimated_price;
+            out.innerHTML = `<div class="text-center"><h2 style="font-size:2.2rem; font-weight:700;">${Number(price).toLocaleString('fr-FR')} €</h2><div class="text-muted small mt-2">Estimation (fallback)</div></div>`;
+          } else {
+            out.innerHTML = `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+          }
         }catch(err){
           out.textContent = 'Erreur: ' + err.message;
         }
