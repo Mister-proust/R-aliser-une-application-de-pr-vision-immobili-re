@@ -1,2 +1,8 @@
 dvc
 pandas
+
+# FastAPI and test dependencies
+fastapi
+uvicorn[standard]
+pytest
+jinja2
