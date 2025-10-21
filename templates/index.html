@@ -12,7 +12,7 @@
         <a class="navbar-brand" href="#">Estimation DVF</a>
         <div class="collapse navbar-collapse">
           <ul class="navbar-nav ms-auto">
-            <li class="nav-item"><a class="nav-link active" href="#">Prototype</a></li>
+            <li class="nav-item"><a class="nav-link active" href="#">Prédiction</a></li>
           </ul>
         </div>
       </div>
@@ -47,13 +47,12 @@
               </form>
               <hr />
               <div>
-                <label for="tokenInput" class="form-label">Jeton API (optionnel)</label>
+                <label for="tokenInput" class="form-label">Jeton API (à demander)</label>
                 <div class="input-group mb-3">
                   <input id="tokenInput" class="form-control" placeholder="Collez votre token ici" />
                   <button id="saveToken" class="btn btn-outline-secondary" type="button">Enregistrer</button>
                   <button id="clearToken" class="btn btn-outline-secondary" type="button">Effacer</button>
                 </div>
-                <small class="text-muted">Si vous fournissez un token, le frontend l'enverra dans l'en-tête Authorization pour appeler la route protégée <code>/predict</code>.</small>
               </div>
             </div>
           </div>
@@ -64,13 +63,6 @@
             <div class="card-body">
               <h5 class="card-title">Résultat</h5>
               <div id="result">Aucun résultat pour l'instant.</div>
-            </div>
-          </div>
-
-          <div class="card">
-            <div class="card-body">
-              <h6 class="card-subtitle mb-2 text-muted">Notes</h6>
-              <p class="small">La prédiction directe via l'API (route <code>/predict</code>) nécessite un jeton d'API. Le frontend appelle la route publique <code>/predict-public</code> qui s'exécute côté serveur sans exposer le jeton.</p>
             </div>
           </div>
         </div>
