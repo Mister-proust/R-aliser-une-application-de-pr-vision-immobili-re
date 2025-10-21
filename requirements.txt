@@ -1,2 +1,13 @@
 dvc
 pandas
+
+
+# dvc : versionning des donnees
+dvc
+dvc[ssh]
+
+# pour le notebook
+missingno
+seaborn
+matplotlib
+
