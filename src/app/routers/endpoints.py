@@ -64,7 +64,7 @@ def prediction_model(payload: Dict[str, Any]):
     # - 'surface_reelle_bati' (number)
     # - 'nombre_pieces_principales' (number)
     # We will:
-    # 1) load the saved pipeline
+    # 1) v  load the saved pipeline
     # 2) recreate LabelEncoders from the training CSV to encode type_voie/type_local
     # 3) lookup commune features (densite, population, superficie_km2, altitude_moyenne, latitude_centre, longitude_centre)
     # 4) build the input dict with exact column names and call pipeline.predict

@@ -145,6 +145,27 @@ def clean_dvf_data(df: pd.DataFrame, df_communes: pd.DataFrame) -> pd.DataFrame:
     df.loc[:, 'Prefixe de section'] = df['Prefixe de section'].fillna('')
     df.loc[:, 'Section'] = df['Section'].fillna('')
     
+    clean_type_voie_mapping = {
+        "AV":"Avenue",
+        "BD:":"Boulevard",
+        "CHE":"Chemin",
+        "CHEM":"Chemin",
+        "IMP":"Impasse",
+        "RTE":"Route",
+        "RUE":"Rue",
+    } # tous les autres types de voie seront considérés comme "Autre"
+    df['Type de voie'] = df['Type de voie'].replace(clean_type_voie_mapping)
+    df['Type de voie'] = df['Type de voie'].fillna('Autre')
+    
+    clean_type_local_mapping = {
+        "Appartement": "Appartement",
+        "Maison": "Maison",
+        "Local industriel. commercial ou assimilé": "Bâtiment industriel"
+    }
+     
+    df['Type local'] = df['Type local'].replace(clean_type_local_mapping)
+    df['Type local'] = df['Type local'].fillna('Autre')
+    
     # Le prix d'un terrain étant insignifiant dans le prix d'un bien immobilier,
     # nous allons supprimer les lignes : 
     #     dont le type de local est Nan car ils n'ont pas de surface bati 
