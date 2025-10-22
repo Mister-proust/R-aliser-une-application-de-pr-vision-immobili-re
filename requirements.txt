@@ -16,4 +16,4 @@ seaborn
 matplotlib
 
 xgboost
-sklearn
+scikit-learn
