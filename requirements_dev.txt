@@ -1,19 +1,8 @@
-dvc
-dvc[ssh]
-pandas
-
 # FastAPI and test dependencies
 fastapi
 uvicorn[standard]
-pytest
 jinja2
-httpx
 pandas
-
-# pour le notebook
-missingno
-seaborn
-matplotlib
 
 xgboost
 scikit-learn
