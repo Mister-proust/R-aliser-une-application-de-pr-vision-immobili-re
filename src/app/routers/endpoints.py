@@ -34,16 +34,22 @@ async def health():
 
 @router.get("/meta/options", tags=["Meta"], summary="Renvoie les valeurs uniques pour les selects")
 def meta_options():
-    import os
-    repo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..','..'))
-    clean_csv = os.path.join(repo_root, 'data', 'clean_dvf.csv')
-    try:
-        df_train = pd.read_csv(clean_csv, sep=';')
-    except Exception:
-        return {"type_voie": [], "type_local": []}
+    type_voie_vals = [
+        "Avenue",
+        "Boulevard",
+        "Chemin",
+        "Impasse",
+        "Route",
+        "Rue",
+        "Autres"
+    ]
 
-    type_voie_vals = sorted(df_train['Type de voie'].astype(str).dropna().unique().tolist()) if 'Type de voie' in df_train.columns else []
-    type_local_vals = sorted(df_train['Type local'].astype(str).dropna().unique().tolist()) if 'Type local' in df_train.columns else []
+    type_local_vals = [
+        "Appartement",
+        "Bâtiment industriel",
+        "Maison"
+        
+    ]
     return {"type_voie": type_voie_vals, "type_local": type_local_vals}
 
 def prediction_model(payload: Dict[str, Any]):
