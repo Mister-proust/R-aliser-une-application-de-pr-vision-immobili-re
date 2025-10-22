@@ -1,6 +1,9 @@
 # config.py
 import os
 from pathlib import Path
+from dotenv import load_dotenv
+
+load_dotenv()
 # API configuration
 API_TITLE = "Prédiction de valeures immobilières à partir des données DVF"
 API_DESCRIPTION = """
