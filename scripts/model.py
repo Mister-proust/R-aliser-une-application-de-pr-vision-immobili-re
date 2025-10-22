@@ -27,7 +27,6 @@ numeric_features = [
     "densite",
     "population",
     "superficie_km2",
-    "altitude_moyenne",
     "latitude_centre",
     "longitude_centre",
 ]
