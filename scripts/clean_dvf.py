@@ -205,7 +205,7 @@ def clean_dvf_data(df: pd.DataFrame, df_communes: pd.DataFrame) -> pd.DataFrame:
 
     df["code_insee"] = df["code_insee"].astype(str)
 
-    df_communes= df_communes[["code_insee", "nom_standard_majuscule", "population", "superficie_km2", "densite", "altitude_moyenne", "latitude_centre", "longitude_centre"]]
+    df_communes= df_communes[["code_insee", "nom_standard_majuscule", "population", "superficie_km2", "densite", "latitude_centre", "longitude_centre"]]
     df_communes["code_insee"] = df_communes["code_insee"].astype(str)
 
     df= pd.merge(df, df_communes, on = "code_insee", how = "left")
