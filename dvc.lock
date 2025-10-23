@@ -13,26 +13,26 @@ stages:
       size: 17131515
     - path: scripts/clean_dvf.py
       hash: md5
-      md5: 8a137cc5b7e0adbd434cbaefd06a8995
-      size: 9196
+      md5: 6cae36156555d1a2dae090a1e63eef51
+      size: 9679
     outs:
     - path: data/clean_dvf.csv
       hash: md5
-      md5: 25295c9e9cec34fb4204650b8853762a
-      size: 46963374
+      md5: 9fbaba4708ef2f960b308d71b838cf73
+      size: 42211556
   train_model:
     cmd: python scripts/model.py
     deps:
     - path: data/clean_dvf.csv
       hash: md5
-      md5: 25295c9e9cec34fb4204650b8853762a
-      size: 46963374
+      md5: 9fbaba4708ef2f960b308d71b838cf73
+      size: 42211556
     - path: scripts/model.py
       hash: md5
-      md5: d537d82d357574229582ca4537eb6210
-      size: 2738
+      md5: a313c4ae7474600baa6da6feef2da0b8
+      size: 2714
     outs:
     - path: data/models/xgb_pipeline.pkl
       hash: md5
-      md5: 90f4fdb710ee18157aa6110827508f59
-      size: 1426975
+      md5: 156e971d74bb5a09cc3307f9e2c04861
+      size: 1428852

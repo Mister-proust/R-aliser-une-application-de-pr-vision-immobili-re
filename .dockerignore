@@ -14,7 +14,6 @@ venv/
 env/
 
 # DVC and data files
-data/
 *.dvc
 
 # Git
