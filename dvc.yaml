@@ -5,7 +5,7 @@ stages:
     - data/ValeursFoncieres-2025-S1.txt
     - scripts/prepare_dvf_data.py
     outs:
-    - data/prepared
+    - data/prepared/ValeursFoncieres-2025-S1.csv
   
   prepare_communes:
     cmd: python scripts/prepare_communes_data.py data/communes-france-2025.csv
@@ -13,4 +13,4 @@ stages:
     - data/communes-france-2025.csv
     - scripts/prepare_communes_data.py
     outs:
-    - data/prepared
+    - data/prepared/communes-france-2025.csv

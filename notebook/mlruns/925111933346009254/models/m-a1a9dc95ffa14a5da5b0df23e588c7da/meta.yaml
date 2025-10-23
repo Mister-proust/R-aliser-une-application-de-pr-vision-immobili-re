@@ -1,0 +1,11 @@
+artifact_location: file:///Users/cyriljeanneau/Documents/02. Professionnel/00. Formation
+  Dev IA/Projets/10. Immo Octobre 2025/R-aliser-une-application-de-pr-vision-immobili-re/notebook/mlruns/925111933346009254/models/m-a1a9dc95ffa14a5da5b0df23e588c7da/artifacts
+creation_timestamp: 1761133017732
+experiment_id: '925111933346009254'
+last_updated_timestamp: 1761133020550
+model_id: m-a1a9dc95ffa14a5da5b0df23e588c7da
+model_type: null
+name: model
+source_run_id: dfba4fb6572c487c860478c70981ade1
+status: 2
+status_message: null
