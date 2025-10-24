@@ -1,6 +1,9 @@
 # config.py
 import os
 from pathlib import Path
+from dotenv import load_dotenv
+
+load_dotenv()
 # API configuration
 API_TITLE = "Prédiction de valeures immobilières à partir des données DVF"
 API_DESCRIPTION = """
@@ -13,3 +16,4 @@ PORT = 8000
 RELOAD = True
 # Simple API token for a lightweight auth. Can be overridden with the API_TOKEN env var.
 API_TOKEN = os.getenv("API_TOKEN", "secret-token")
+MODEL_PATH = Path(__file__).parent.parent.parent / "data" / "models" / "xgb_pipeline.pkl"

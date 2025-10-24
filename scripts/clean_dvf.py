@@ -1,7 +1,13 @@
-import sys
+
+# data_process/fill_dvf.py
+
 import os
+import glob
 import pandas as pd
+import time
+from typing import Optional
 import logging
+import sys
 
 logging.basicConfig(
     level=logging.INFO,
@@ -14,6 +20,8 @@ logging.basicConfig(
 )
 
 logger = logging.getLogger(__name__)
+
+DATA_DIR = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'data'))
 
 def load_dvf_file(file_path: str) -> pd.DataFrame:
     """
@@ -31,6 +39,7 @@ def load_dvf_file(file_path: str) -> pd.DataFrame:
     if not os.path.exists(file_path):
         raise FileNotFoundError(f"Le fichier {file_path} n'existe pas.")
     # Chargement du fichier DVF
+    logger.info(f"Chargement du fichier DVF depuis {file_path}...")
 
     col_to_keep = [
         'Date mutation',
@@ -88,9 +97,21 @@ def load_dvf_file(file_path: str) -> pd.DataFrame:
     )
     return df
 
-def clean_dvf_data(df: pd.DataFrame) -> pd.DataFrame:
+def load_communes_file(file_path_communes: str) -> pd.DataFrame:
+    df = pd.DataFrame()
+    # Vérification de l'existence du fichier
+    if not os.path.exists(file_path_communes):
+        raise FileNotFoundError(f"Le fichier {file_path_communes} n'existe pas.")
+    # Chargement du fichier DVF
+    logger.info(f"Chargement du fichier DVF depuis {file_path_communes}...")
+    df_communes = pd.read_csv(
+        file_path_communes,
+        sep=",")
+    return df_communes
+
+def clean_dvf_data(df: pd.DataFrame, df_communes: pd.DataFrame) -> pd.DataFrame:
     """
-    Nettoie le DataFrame DVF.
+    Nettoie le DataFrame DVF et le df_communes.
     
     Parameters:
         df (pd.DataFrame): DataFrame contenant les données DVF
@@ -124,6 +145,27 @@ def clean_dvf_data(df: pd.DataFrame) -> pd.DataFrame:
     df.loc[:, 'Prefixe de section'] = df['Prefixe de section'].fillna('')
     df.loc[:, 'Section'] = df['Section'].fillna('')
     
+    clean_type_voie_mapping = {
+        "AV":"Avenue",
+        "BD:":"Boulevard",
+        "CHE":"Chemin",
+        "CHEM":"Chemin",
+        "IMP":"Impasse",
+        "RTE":"Route",
+        "RUE":"Rue",
+    } # tous les autres types de voie seront considérés comme "Autre"
+    df['Type de voie'] = df['Type de voie'].replace(clean_type_voie_mapping)
+    df['Type de voie'] = df['Type de voie'].fillna('Autre')
+    
+    clean_type_local_mapping = {
+        "Appartement": "Appartement",
+        "Maison": "Maison",
+        "Local industriel. commercial ou assimilé": "Bâtiment industriel"
+    }
+     
+    df['Type local'] = df['Type local'].replace(clean_type_local_mapping)
+    df['Type local'] = df['Type local'].fillna('Autre')
+    
     # Le prix d'un terrain étant insignifiant dans le prix d'un bien immobilier,
     # nous allons supprimer les lignes : 
     #     dont le type de local est Nan car ils n'ont pas de surface bati 
@@ -155,11 +197,24 @@ def clean_dvf_data(df: pd.DataFrame) -> pd.DataFrame:
 
     # On va recréer l'index du dataframe pour qu'il soit propre
     df.reset_index(drop=True, inplace=True)
+
+    df["code_insee"]= (
+    df["Code departement"].astype(str).str.zfill(2) + 
+    df["Code commune"].astype(str).str.zfill(3)
+    )
+
+    df["code_insee"] = df["code_insee"].astype(str)
+
+    df_communes= df_communes[["code_insee", "nom_standard_majuscule", "population", "superficie_km2", "densite", "latitude_centre", "longitude_centre"]]
+    df_communes["code_insee"] = df_communes["code_insee"].astype(str)
+
+    df= pd.merge(df, df_communes, on = "code_insee", how = "left")
+    df = df.dropna(subset = "densite")
+    df = df.dropna(subset = "latitude_centre")
     
     return df
 
-
-def save_dvf_df_to_csv(df: pd.DataFrame, output_path: str) -> None:
+def save_dvf__df_to_csv(df: pd.DataFrame, output_path: str) -> None:
     """
     Sauvegarde le DataFrame DVF dans un fichier CSV.
     
@@ -177,12 +232,23 @@ def save_dvf_df_to_csv(df: pd.DataFrame, output_path: str) -> None:
         logger.error(f"Erreur lors de la sauvegarde du fichier CSV : {e}")
 
 
+
 if __name__ == "__main__":
-    filename = sys.argv[1]
-    df = load_dvf_file(filename)
-    df = clean_dvf_data(df)
-    # Retirer l'extension existante (si présente) avant d'ajouter .csv et le path
-    file = os.path.basename(filename)
-    base, _ = os.path.splitext(file)
-    output_filename = os.path.join('data', 'prepared', base + ".csv")
-    save_dvf_df_to_csv(df, output_filename)
+    
+    # test retrieve_id_ban()
+    file = "ValeursFoncieres-2025-S1.txt"
+    file_communes = "communes-france-2025.csv"
+    file_path = os.path.join(DATA_DIR, file)
+    file_path_communes = os.path.join(DATA_DIR, file_communes)
+    df = load_dvf_file(file_path)
+    df_communes = load_communes_file(file_path_communes)
+    df_cleaned = clean_dvf_data(df, df_communes)
+    df_cleaned.to_csv(os.path.join(DATA_DIR, "clean_dvf.csv"), index=False, sep=';')
+    print(len(df))
+    start_time = time.time()
+    end_time = time.time()
+    print(f"Temps total pour le test : {(end_time - start_time):.2f} secondes")
+
+
+
+

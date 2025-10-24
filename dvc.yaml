@@ -1,16 +1,17 @@
 stages:
-  prepare_dvf:
-    cmd: python scripts/prepare_dvf_data.py data/ValeursFoncieres-2025-S1.txt
+  prepare:
+    cmd: |
+      python scripts/clean_dvf.py data/ValeursFoncieres-2025-S1.txt data/communes-france-2025.csv
     deps:
     - data/ValeursFoncieres-2025-S1.txt
-    - scripts/prepare_dvf_data.py
-    outs:
-    - data/prepared/ValeursFoncieres-2025-S1.csv
-  
-  prepare_communes:
-    cmd: python scripts/prepare_communes_data.py data/communes-france-2025.csv
-    deps:
     - data/communes-france-2025.csv
-    - scripts/prepare_communes_data.py
+    - scripts/clean_dvf.py
     outs:
-    - data/prepared/communes-france-2025.csv
+    - data/clean_dvf.csv
+  train_model:
+    cmd: python scripts/model.py
+    deps:
+    - data/clean_dvf.csv
+    - scripts/model.py
+    outs:
+    - data/models/xgb_pipeline.pkl
