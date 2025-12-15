@@ -25,3 +25,9 @@ tensorflow
 
 # models follow-up
 mlflow
+
+# Application
+fastapi
+uvicorn[standard]
+pytest
+jinja2

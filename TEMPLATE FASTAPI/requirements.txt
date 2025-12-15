@@ -1,0 +1,23 @@
+Framework Web
+
+fastapi
+uvicorn[standard]
+
+Configuration
+
+pydantic
+pydantic-settings
+
+Base de données
+
+oracledb
+
+Authentification
+
+python-jose[cryptography]
+passlib[bcrypt]
+
+Tests
+
+pytest
+httpx # Requis par TestClient de FastAPI
