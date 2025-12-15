@@ -116,6 +116,6 @@ ssh group1@ssh.datalab.centreia.fr
 Sur le serevur distant :
 ```bash
 git clone https://github.com/Mister-proust/R-aliser-une-application-de-pr-vision-immobili-re.git
-docker build -t mon-app:latest .
-docker run -p 8000:8000 mon-app:latest
+docker build -t g3appimmo .
+docker run -p 5003:8000 g3appimmo
 ```
