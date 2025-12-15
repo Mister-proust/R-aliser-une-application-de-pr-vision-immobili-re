@@ -90,3 +90,32 @@ L'application est construite avec **FastAPI**, un framework web moderne pour Pyt
 ### Conteneurisation
 
 Un `Dockerfile` est inclus pour permettre de construire une image Docker de l'application, facilitant ainsi son déploiement dans un environnement conteneurisé.
+
+    #### Construction de l'image Docker
+
+```bash
+docker build -t mon-app:latest .
+```
+
+    #### Démarrage du conteneur
+
+```bash
+docker run -p 8000:8000 mon-app:latest
+```
+
+### Une VM a été créée sur le datalab via terraform
+
+cf fichier main.tf
+
+### Connexion a la VM.
+```bash
+ssh group1@ssh.datalab.centreia.fr
+```
+
+### On peut cloner le github du projet
+Sur le serevur distant :
+```bash
+git clone https://github.com/Mister-proust/R-aliser-une-application-de-pr-vision-immobili-re.git
+docker build -t mon-app:latest .
+docker run -p 8000:8000 mon-app:latest
+```
