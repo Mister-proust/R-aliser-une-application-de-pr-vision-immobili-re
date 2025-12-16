@@ -31,5 +31,5 @@ jobs:
           docker build -t my-app-prod .
           docker stop my-app-container || true
           docker rm my-app-container || true
-          docker run -d --name my-app-container -p 80:80 my-app-prod
+          docker run -d --name my-app-container -p 8003:8003 my-app-prod
           
