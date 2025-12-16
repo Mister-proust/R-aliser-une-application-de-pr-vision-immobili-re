@@ -29,8 +29,8 @@ stages:
       size: 42211556
     - path: scripts/model.py
       hash: md5
-      md5: a313c4ae7474600baa6da6feef2da0b8
-      size: 2714
+      md5: 61a28cfdc0d3e12de81807e1c812d3bd
+      size: 2716
     outs:
     - path: data/models/xgb_pipeline.pkl
       hash: md5

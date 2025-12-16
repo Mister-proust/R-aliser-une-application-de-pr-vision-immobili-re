@@ -85,3 +85,4 @@ with open(os.path.join(DATA_DIR, "models", "xgb_pipeline.pkl"), "rb") as f:
 # Test du pipeline chargé
 y_pred_loaded = loaded_pipeline.predict(X_test)
 print(f"Test du modèle chargé - R²: {r2_score(y_test, y_pred_loaded):.3f}")
+
