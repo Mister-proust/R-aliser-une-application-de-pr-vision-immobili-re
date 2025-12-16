@@ -6,3 +6,4 @@ jinja2
 pandas
 xgboost
 scikit-learn
+prometheus-fastapi-instrumentator

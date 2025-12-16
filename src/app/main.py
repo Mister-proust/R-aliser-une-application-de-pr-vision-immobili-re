@@ -11,6 +11,7 @@ import sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from app.routers.endpoints import router as api_router
 import app.config as config
+from prometheus_fastapi_instrumentator import Instrumentator
  
 app = FastAPI(
     title=config.API_TITLE,
@@ -29,6 +30,8 @@ app.add_middleware(
 )
 
 app.include_router(api_router)  # Include the router
+
+Instrumentator().instrument(app).expose(app, endpoint="/metrics")
 
 templates = Jinja2Templates(directory="templates")
 

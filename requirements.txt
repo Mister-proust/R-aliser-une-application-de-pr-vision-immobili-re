@@ -26,3 +26,4 @@ tensorflow
 # models follow-up
 mlflow
 xgboost
+prometheus-fastapi-instrumentator
