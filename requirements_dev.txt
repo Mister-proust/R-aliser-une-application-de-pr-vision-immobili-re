@@ -1,0 +1,10 @@
+# FastAPI and test dependencies
+fastapi
+uvicorn[standard]
+jinja2
+pandas
+requests
+
+xgboost
+scikit-learn
+prometheus-fastapi-instrumentator

@@ -1,0 +1,23 @@
+artifact_path: file:///Users/cyriljeanneau/Documents/02. Professionnel/00. Formation
+  Dev IA/Projets/10. Immo Octobre 2025/R-aliser-une-application-de-pr-vision-immobili-re/notebook/mlruns/925111933346009254/models/m-626a3d5d23f64ad39342fdc2bf362afe/artifacts
+flavors:
+  python_function:
+    env:
+      conda: conda.yaml
+      virtualenv: python_env.yaml
+    loader_module: mlflow.sklearn
+    model_path: model.pkl
+    predict_fn: predict
+    python_version: 3.12.11
+  sklearn:
+    code: null
+    pickled_model: model.pkl
+    serialization_format: cloudpickle
+    sklearn_version: 1.7.2
+mlflow_version: 3.5.0
+model_id: m-626a3d5d23f64ad39342fdc2bf362afe
+model_size_bytes: 417392
+model_uuid: m-626a3d5d23f64ad39342fdc2bf362afe
+prompts: null
+run_id: d1c251c7301f4e579f20847e13647bc5
+utc_time_created: '2025-10-22 11:37:00.863917'

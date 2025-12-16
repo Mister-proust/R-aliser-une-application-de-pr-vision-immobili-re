@@ -1,0 +1,38 @@
+schema: '2.0'
+stages:
+  prepare:
+    cmd: "python scripts/clean_dvf.py data/ValeursFoncieres-2025-S1.txt data/communes-france-2025.csv\n"
+    deps:
+    - path: data/ValeursFoncieres-2025-S1.txt
+      hash: md5
+      md5: 00bdcd2605b6cd8fed35ec8d60024d71
+      size: 184978486
+    - path: data/communes-france-2025.csv
+      hash: md5
+      md5: 16cc53b5f70730eb2973e7e33609e1f3
+      size: 17131515
+    - path: scripts/clean_dvf.py
+      hash: md5
+      md5: 6cae36156555d1a2dae090a1e63eef51
+      size: 9679
+    outs:
+    - path: data/clean_dvf.csv
+      hash: md5
+      md5: 9fbaba4708ef2f960b308d71b838cf73
+      size: 42211556
+  train_model:
+    cmd: python scripts/model.py
+    deps:
+    - path: data/clean_dvf.csv
+      hash: md5
+      md5: 9fbaba4708ef2f960b308d71b838cf73
+      size: 42211556
+    - path: scripts/model.py
+      hash: md5
+      md5: a313c4ae7474600baa6da6feef2da0b8
+      size: 2714
+    outs:
+    - path: data/models/xgb_pipeline.pkl
+      hash: md5
+      md5: 156e971d74bb5a09cc3307f9e2c04861
+      size: 1428852

@@ -1,0 +1,27 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+
+# Virtual environments
+venv/
+.venv/
+env/
+
+# DVC and data files
+*.dvc
+
+# Git
+.git
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Dockerfile artifacts
+*.log

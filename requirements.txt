@@ -15,3 +15,15 @@ missingno
 seaborn
 matplotlib
 
+# Machine learning
+scikit-learn
+joblib
+xgboost
+
+# Deep learning
+tensorflow
+
+# models follow-up
+mlflow
+xgboost
+prometheus-fastapi-instrumentator
