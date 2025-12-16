@@ -26,7 +26,7 @@ jobs:
         username: ${{ secrets.SSH_USER }}
         key: ${{ secrets.SSH_PRIVATE_KEY }}
         script: |
-          cd /chemin/vers/ton/projet
+          cd R-aliser-une-application-de-pr-vision-immobili-re
           git pull origin main
           docker build -t my-app-prod .
           docker stop my-app-container || true
