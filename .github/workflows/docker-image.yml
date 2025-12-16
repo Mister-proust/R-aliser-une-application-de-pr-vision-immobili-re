@@ -2,7 +2,7 @@ name: Docker Image CI
 
 on:
   push:
-    branches: [ "cyrilCICD" ]
+    branches: [ "main" ]
   
 jobs:
 
@@ -32,3 +32,4 @@ jobs:
           docker stop my-app-container || true
           docker rm my-app-container || true
           docker run -d --name my-app-container -p 80:80 my-app-prod
+          
