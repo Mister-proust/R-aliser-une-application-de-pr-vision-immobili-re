@@ -27,7 +27,7 @@ jobs:
         key: ${{ secrets.SSH_PRIVATE_KEY }}
         script: |
           cd /chemin/vers/ton/projet
-          git pull origin cyrilCICD
+          git pull origin main
           docker build -t my-app-prod .
           docker stop my-app-container || true
           docker rm my-app-container || true
