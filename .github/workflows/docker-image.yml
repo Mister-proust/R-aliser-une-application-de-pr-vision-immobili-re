@@ -11,6 +11,24 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
-    - name: Build the Docker image
+    #Action Github pour copier le code sur la machine Github action (ghcr)
+    - uses: actions/checkout@v4 
+
+    # Étape de test (Build) pour vérifier que tout est OK
+    - name: Build the Docker image 
       run: docker build . --file Dockerfile --tag my-image-name:$(date +%s)
+
+    # NOUVELLE ÉTAPE : Se connecter à la VM pour mettre à jour le projet
+    - name: Deploy to VM via SSH
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: ${{ secrets.SSH_HOST }}
+        username: ${{ secrets.SSH_USER }}
+        key: ${{ secrets.SSH_PRIVATE_KEY }}
+        script: |
+          cd /chemin/vers/ton/projet
+          git pull origin cyrilCICD
+          docker build -t my-app-prod .
+          docker stop my-app-container || true
+          docker rm my-app-container || true
+          docker run -d --name my-app-container -p 80:80 my-app-prod
