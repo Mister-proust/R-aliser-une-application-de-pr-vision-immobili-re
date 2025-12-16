@@ -109,7 +109,7 @@ cf fichier main.tf
 
 ### Connexion a la VM.
 ```bash
-ssh group3@ssh.datalab.centreia.fr
+ssh group3@ssh2.datalab.centreia.fr
 ```
 
 ### On peut cloner le github du projet
