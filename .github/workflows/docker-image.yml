@@ -1,0 +1,35 @@
+name: Docker Image CI
+
+on:
+  push:
+    branches: [ "main" ]
+  
+jobs:
+
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    #Action Github pour copier le code sur la machine Github action (ghcr)
+    - uses: actions/checkout@v4 
+
+    # Étape de test (Build) pour vérifier que tout est OK
+    - name: Build the Docker image 
+      run: docker build . --file Dockerfile --tag my-image-name:$(date +%s)
+
+    # NOUVELLE ÉTAPE : Se connecter à la VM pour mettre à jour le projet
+    - name: Deploy to VM via SSH
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: ${{ secrets.SSH_HOST }}
+        username: ${{ secrets.SSH_USER }}
+        key: ${{ secrets.SSH_PRIVATE_KEY }}
+        script: |
+          cd R-aliser-une-application-de-pr-vision-immobili-re
+          git pull origin main
+          docker build -t group3-app .
+          docker stop group3-app-container || true
+          docker rm group3-app-container || true
+          docker run -d --name group3-app-container -p 5003:8000 group3-app
+          
