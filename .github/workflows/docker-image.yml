@@ -28,8 +28,8 @@ jobs:
         script: |
           cd R-aliser-une-application-de-pr-vision-immobili-re
           git pull origin main
-          docker build -t my-app-prod .
-          docker stop my-app-container || true
-          docker rm my-app-container || true
-          docker run -d --name my-app-container -p 5003:8000 my-app-prod
+          docker build -t group3-app .
+          docker stop group3-app-container || true
+          docker rm group3-app-container || true
+          docker run -d --name group3-app-container -p 5003:8000 group3-app
           
