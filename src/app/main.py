@@ -41,6 +41,11 @@ async def index(request: Request):
     return templates.TemplateResponse(request, "index.html")
 
 
+@app.get("/shap", response_class=HTMLResponse)
+async def shap_page(request: Request):
+    return templates.TemplateResponse(request, "shap.html")
+
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(
