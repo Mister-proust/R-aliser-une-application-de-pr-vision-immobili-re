@@ -389,11 +389,17 @@ async def shap_explanation(payload: Dict[str, Any], auth: bool = Depends(verify_
             X_processed = df_input.values
         
         # 5. Générer l'explication SHAP
-        shap_values = explainer.shap_values(X_processed)
+        # Pour waterfall, on a besoin d'un objet Explanation, pas juste des valeurs numpy
+        explanation = explainer(X_processed)
         
-        # Gérer le cas où shap_values est une liste (multi-class)
-        if isinstance(shap_values, list):
-            shap_values = shap_values[0]
+        # L'objet explanation peut contenir plusieurs lignes, on prend la première (et unique)
+        # shap_values_val est le tableau numpy des valeurs SHAP (pour la rétrocompatibilité du JSON de réponse)
+        shap_values_val = explanation.values
+        if len(shap_values_val.shape) > 1: # Si (1, features)
+             shap_values_val = shap_values_val[0]
+        
+        # Assigner les noms de features à l'explication pour que le graphique soit lisible
+        explanation.feature_names = df_input.columns.tolist()
         
         # 6. Prédiction
         prediction = pipeline.predict(df_input)[0]
@@ -402,7 +408,12 @@ async def shap_explanation(payload: Dict[str, Any], auth: bool = Depends(verify_
         plt.figure(figsize=(10, 4))
         try:
             # Summary plot
-            shap.summary_plot(shap_values, X_processed, feature_names=df_input.columns, plot_type="bar", show=False)
+            # shap.summary_plot(shap_values, X_processed, feature_names=df_input.columns, plot_type="bar", show=False)
+            
+            # Waterfall plot (requiert un objet Explanation [index])
+            # On prend explanation[0] car on a une seule prédiction
+            shap.plots.waterfall(explanation[0], show=False)
+            #shap.plots.beeswarm(explanation, show=False)
             
             # Convertir en base64
             buffer = BytesIO()
@@ -416,7 +427,7 @@ async def shap_explanation(payload: Dict[str, Any], auth: bool = Depends(verify_
                 "prediction": safe_float(prediction),
                 "input": df_input.to_dict(orient="records")[0],
                 "shap_plot": f"data:image/png;base64,{image_base64}",
-                "shap_values": shap_values.tolist() if hasattr(shap_values, 'tolist') else shap_values,
+                "shap_values": shap_values_val.tolist() if hasattr(shap_values_val, 'tolist') else shap_values_val,
                 "feature_names": list(df_input.columns)
             }
         except Exception as plot_error:
@@ -427,7 +438,7 @@ async def shap_explanation(payload: Dict[str, Any], auth: bool = Depends(verify_
                 "status": "partial_success",
                 "prediction": safe_float(prediction),
                 "input": df_input.to_dict(orient="records")[0],
-                "shap_values": shap_values.tolist() if hasattr(shap_values, 'tolist') else shap_values,
+                "shap_values": shap_values_val.tolist() if hasattr(shap_values_val, 'tolist') else shap_values_val,
                 "feature_names": list(df_input.columns),
                 "plot_error": str(plot_error)
             }
