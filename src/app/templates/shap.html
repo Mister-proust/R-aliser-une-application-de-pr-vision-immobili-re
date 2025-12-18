@@ -1,0 +1,184 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Explications SHAP - App de prédiction immobilière</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+      body {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+      }
+      .card {
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      }
+      .shap-plot {
+        max-width: 100%;
+        height: auto;
+        margin-top: 20px;
+      }
+      .info-box {
+        background-color: #e7f3ff;
+        border-left: 4px solid #2196F3;
+        padding: 15px;
+        margin-bottom: 15px;
+      }
+    </style>
+  </head>
+  <body class="bg-light">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4">
+      <div class="container-fluid">
+        <a class="navbar-brand" href="#">📊 Explications SHAP</a>
+        <div class="collapse navbar-collapse">
+          <ul class="navbar-nav ms-auto">
+            <li class="nav-item"><a class="nav-link" href="/">Prédiction</a></li>
+            <li class="nav-item"><a class="nav-link active" href="/shap">SHAP</a></li>
+          </ul>
+        </div>
+      </div>
+    </nav>
+
+    <main class="container">
+      <div class="row">
+        <div class="col-lg-8 offset-lg-2">
+          <div class="card mb-4">
+            <div class="card-body">
+              <h5 class="card-title">Interprétabilité du modèle avec SHAP</h5>
+              <p class="card-text text-muted">
+                SHAP (SHapley Additive exPlanations) explique comment chaque variable affecte la prédiction.
+                Remplissez le formulaire pour obtenir une explication détaillée.
+              </p>
+              
+              <div class="info-box">
+                <strong>💡 Qu'est-ce que SHAP ?</strong>
+                <p class="mb-0">
+                  SHAP utilise la théorie des jeux pour expliquer les prédictions. 
+                  Chaque feature reçoit une valeur SHAP indiquant son impact sur la prédiction.
+                </p>
+              </div>
+
+              <form id="shapForm" onsubmit="return false;">
+                <div class="mb-3">
+                  <label for="commune2" class="form-label">Commune</label>
+                  <input id="commune2" class="form-control" placeholder="Ex: Paris" />
+                </div>
+
+                <div class="row">
+                  <div class="col-md-6 mb-3">
+                    <label for="surface2" class="form-label">Surface (m²)</label>
+                    <input id="surface2" class="form-control" placeholder="Ex: 75" type="number" min="0" />
+                  </div>
+                  <div class="col-md-6 mb-3">
+                    <label for="rooms2" class="form-label">Pièces</label>
+                    <input id="rooms2" class="form-control" placeholder="Ex: 3" type="number" min="0" />
+                  </div>
+                </div>
+
+                <button type="button" id="explainBtn" class="btn btn-primary w-100">
+                  Obtenir l'explication SHAP
+                </button>
+              </form>
+
+              <hr />
+              
+              <div>
+                <label for="tokenInput2" class="form-label">Jeton API (à demander)</label>
+                <div class="input-group mb-3">
+                  <input id="tokenInput2" class="form-control" placeholder="Collez votre token ici" />
+                  <button id="saveToken2" class="btn btn-outline-secondary" type="button">Enregistrer</button>
+                  <button id="clearToken2" class="btn btn-outline-secondary" type="button">Effacer</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-body">
+              <h5 class="card-title">Résultat SHAP</h5>
+              <div id="shapResult">Aucun résultat pour l'instant.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <script>
+      // Token management
+      const tokenInput2 = document.getElementById('tokenInput2');
+      const saveTokenBtn2 = document.getElementById('saveToken2');
+      const clearTokenBtn2 = document.getElementById('clearToken2');
+
+      function getSavedToken() { return localStorage.getItem('api_token') || ''; }
+      function setSavedToken(t) { localStorage.setItem('api_token', t); }
+      function clearSavedToken() { localStorage.removeItem('api_token'); }
+
+      tokenInput2.value = getSavedToken();
+
+      saveTokenBtn2.addEventListener('click', () => {
+        setSavedToken(tokenInput2.value.trim());
+        alert('Token enregistré');
+      });
+
+      clearTokenBtn2.addEventListener('click', () => {
+        clearSavedToken();
+        tokenInput2.value = '';
+        alert('Token effacé');
+      });
+
+      // SHAP explanation request
+      document.getElementById('explainBtn').addEventListener('click', async (e) => {
+        e.preventDefault();
+        const commune = document.getElementById('commune2').value;
+        const surface = document.getElementById('surface2').value;
+        const rooms = document.getElementById('rooms2').value;
+        const out = document.getElementById('shapResult');
+        
+        out.innerHTML = '<div class="spinner-border" role="status"><span class="visually-hidden">Chargement...</span></div>';
+
+        try {
+          const payload = { commune, surface, rooms };
+          const token = getSavedToken();
+
+          if (!token) {
+            throw new Error('Veuillez d\'abord enregistrer votre token API');
+          }
+
+          const res = await fetch('/shap-explanation', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer ' + token
+            },
+            body: JSON.stringify(payload)
+          });
+
+          if (!res.ok) {
+            const errorData = await res.json();
+            throw new Error('API Error: ' + (errorData.detail || res.status));
+          }
+
+          const data = await res.json();
+          
+          if (data.status === 'success') {
+            out.innerHTML = `
+              <div class="alert alert-success">
+                <h6>✓ Explication générée</h6>
+                <p>Prédiction : <strong>${data.prediction} €</strong></p>
+                <div class="text-center">
+                  <img src="${data.shap_plot}" alt="Graphique SHAP" class="shap-plot img-fluid border rounded" />
+                </div>
+              </div>
+            `;
+          } else {
+            out.innerHTML = `<div class="alert alert-danger">${data.error || 'Erreur inconnue'}</div>`;
+          }
+        } catch (err) {
+          out.innerHTML = `<div class="alert alert-danger">Erreur: ${err.message}</div>`;
+        }
+      });
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  </body>
+</html>
