@@ -27,3 +27,4 @@ tensorflow
 mlflow
 xgboost
 prometheus-fastapi-instrumentator
+shap

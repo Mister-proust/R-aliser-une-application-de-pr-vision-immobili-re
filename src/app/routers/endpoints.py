@@ -1,4 +1,4 @@
-from email.policy import HTTP
+
 from fastapi import APIRouter, HTTPException, Depends, Query, UploadFile, File, status, Header
 from fastapi.responses import JSONResponse
 from typing import Annotated, Dict, Any, List, Optional
@@ -8,8 +8,83 @@ from fastapi.security import OAuth2PasswordRequestForm
 import pandas as pd
 import app.config as config  # Assurez-vous que ce fichier existe
 import requests
+import shap
+import json
+import base64
+from io import BytesIO
+import matplotlib.pyplot as plt
+import os
+import numpy as np
+import logging
+import traceback
+
+# Setup logger
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
+
+# --- Cache global du modèle ---
+_model_cache = None
+_explainer_cache = None
+
+def load_model():
+    """
+    Charge le modèle pickle de manière commune (utilisé par prediction_model et shap_explanation).
+    Utilise le cache pour éviter les rechargements.
+    """
+    global _model_cache
+    
+    if _model_cache is not None:
+        return _model_cache
+    
+    model_path = getattr(config, "MODEL_PATH", "models/xgb_pipeline.pkl") 
+    try:
+        with open(model_path, "rb") as f:
+            pipeline = pickle.load(f)
+        _model_cache = pipeline
+        return pipeline
+    except FileNotFoundError:
+        raise HTTPException(status_code=500, detail=f"Fichier modèle introuvable à: {model_path}")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erreur lors du chargement du modèle: {e}")
+
+def load_explainer():
+    """
+    Crée l'explainer SHAP à partir du modèle chargé.
+    """
+    global _explainer_cache
+    
+    if _explainer_cache is not None:
+        return _explainer_cache
+    
+    try:
+        pipeline = load_model()
+        xgb_model = pipeline.named_steps.get('model')
+        if xgb_model:
+            _explainer_cache = shap.TreeExplainer(xgb_model)
+        return _explainer_cache
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erreur lors de la création de l'explainer SHAP: {e}")
+
+def safe_float(value, default=0.0):
+    """Convertit une valeur en float de manière sécurisée"""
+    if value is None:
+        return default
+    if isinstance(value, str) and not value.strip():
+        return default
+    try:
+        return float(value)
+    except (ValueError, TypeError):
+        return default
+
+def safe_int(value, default=0):
+    """Convertit une valeur en int de manière sécurisée"""
+    if value is None or value == "":
+        return default
+    try:
+        return int(float(value))
+    except (ValueError, TypeError):
+        return default
 
 # --- Constantes (manquantes dans votre script original) ---
 # J'ajoute des placeholders pour que le script soit fonctionnel.
@@ -120,25 +195,26 @@ def get_commune_info(commune_or_insee: str) -> Dict[str, Any]:
         surface_hectares = commune_data.get('surface') 
         coordinates = commune_data.get('centre', {}).get('coordinates')
         
-        if not all([population, surface_hectares, coordinates]):
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
-                detail=f"Données incomplètes reçues de l'API Géo pour '{commune_or_insee}'"
-            )
-
+        # Validation plus souple avec conversion sécurisée
+        pop_safe = safe_float(population, 0.0)
+        surf_safe = safe_float(surface_hectares, 0.0)
+        
         # 5. Calculer la densité
-        surface_km2 = surface_hectares / 100.0
-        densite = 0
+        surface_km2 = surf_safe / 100.0
+        densite = 0.0
         if surface_km2 > 0:
-            densite = population / surface_km2
+            densite = pop_safe / surface_km2
+        
+        lat = coordinates[1] if coordinates and len(coordinates) > 1 else 0.0
+        lon = coordinates[0] if coordinates and len(coordinates) > 0 else 0.0
         
         # 6. Retourner le dictionnaire EXACT que 'prediction_model' attend
         return {
             "densite": round(densite, 2),
-            "population": float(population),
+            "population": pop_safe,
             "superficie_km2": round(surface_km2, 2),
-            "latitude_centre": coordinates[1],
-            "longitude_centre": coordinates[0]
+            "latitude_centre": lat,
+            "longitude_centre": lon
         }
 
     except requests.exceptions.RequestException as e:
@@ -159,17 +235,8 @@ def prediction_model(payload: Dict[str, Any]) -> Dict[str, Any]:
     """
     Charge le modèle et réalise une prédiction de prix immobilier à partir des données utilisateur.
     """
-    # --- 1️⃣ Chargement du modèle ---
-    # S'assure que config.MODEL_PATH existe
-    model_path = getattr(config, "MODEL_PATH", "model.pkl") 
-    try:
-        with open(model_path, "rb") as f:
-            pipeline = pickle.load(f)
-    except FileNotFoundError:
-        raise HTTPException(status_code=500, detail=f"Fichier modèle introuvable à: {model_path}")
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Erreur lors du chargement du modèle: {e}")
-
+    # --- 1️⃣ Chargement du modèle (utilise la fonction commune) ---
+    pipeline = load_model()
 
     # --- 2️⃣ Récupération des infos communes ---
     commune_key = payload.get("code_insee") or payload.get("commune")
@@ -193,14 +260,23 @@ def prediction_model(payload: Dict[str, Any]) -> Dict[str, Any]:
     type_voie = TYPE_VOIE_MAP.get(payload.get("type_voie", ""), payload.get("type_voie", ""))
     type_local = TYPE_LOCAL_MAP.get(payload.get("type_local", ""), payload.get("type_local", ""))
 
-    # --- 4️⃣ Construction de l’entrée modèle ---
+    # --- 4️⃣ Construction de l'entrée modèle ---
     # S'assure que les clés correspondent exactement à celles attendues par votre pipeline
+    # Support des clés alternatives venant du frontend simplifié
+    surface = safe_float(payload.get("surface_reelle_bati"), 0.0)
+    if surface == 0.0:
+         surface = safe_float(payload.get("surface"), 0.0)
+         
+    pieces = safe_int(payload.get("nombre_pieces_principales"), 0)
+    if pieces == 0:
+        pieces = safe_int(payload.get("rooms"), 0)
+
     df_input = pd.DataFrame([{
         "Type de voie": type_voie,
         "Type local": type_local,
-        "Surface terrain": float(payload.get("surface_terrain", 0.0)),
-        "Surface reelle bati": float(payload.get("surface_reelle_bati", 0.0)),
-        "Nombre pieces principales": int(payload.get("nombre_pieces_principales", 0.0)),
+        "Surface terrain": safe_float(payload.get("surface_terrain"), 0.0),
+        "Surface reelle bati": surface,
+        "Nombre pieces principales": pieces,
         "densite": commune_features.get("densite", 0.0),
         "population": commune_features.get("population", 0.0),
         "superficie_km2": commune_features.get("superficie_km2", 0.0),
@@ -247,6 +323,135 @@ def perform_prediction(payload: Dict[str, Any]) -> Dict[str, Any]:
     bonus_par_piece = 5000
     estimated_price = round(surface * prix_m2 + rooms * bonus_par_piece, 2)
     return {"estimated_price": estimated_price, "currency": "EUR", "input": payload}
+
+
+@router.post("/shap-explanation", tags=["SHAP"], summary="Explique une prédiction avec SHAP")
+async def shap_explanation(payload: Dict[str, Any], auth: bool = Depends(verify_token)):
+    """
+    Retourne une explication SHAP pour une prédiction donnée (format base64 d'image).
+    """
+    try:
+        # 1. Charger le modèle et l'explainer
+        pipeline = load_model()
+        explainer = load_explainer()
+        
+        if not explainer:
+            return {
+                "error": "Explainer SHAP non disponible pour ce modèle",
+                "status": "error"
+            }
+        
+        # 2. Récupérer les infos communes
+        commune_key = payload.get("code_insee") or payload.get("commune")
+        
+        if commune_key:
+            commune_features = get_commune_info(str(commune_key))
+        else:
+            commune_features = {
+                "densite": 0.0,
+                "population": 0.0,
+                "superficie_km2": 0.0,
+                "latitude_centre": 0.0,
+                "longitude_centre": 0.0
+            }
+        
+        # 3. Construire l'entrée modèle (identique à prediction_model)
+        type_voie = TYPE_VOIE_MAP.get(payload.get("type_voie", ""), payload.get("type_voie", ""))
+        type_local = TYPE_LOCAL_MAP.get(payload.get("type_local", ""), payload.get("type_local", ""))
+        
+        # Support des clés alternatives venant du frontend simplifié
+        surface = safe_float(payload.get("surface_reelle_bati"), 0.0)
+        if surface == 0.0:
+             surface = safe_float(payload.get("surface"), 0.0)
+             
+        pieces = safe_int(payload.get("nombre_pieces_principales"), 0)
+        if pieces == 0:
+            pieces = safe_int(payload.get("rooms"), 0)
+        
+        df_input = pd.DataFrame([{
+            "Type de voie": type_voie,
+            "Type local": type_local,
+            "Surface terrain": safe_float(payload.get("surface_terrain"), 0.0),
+            "Surface reelle bati": surface,
+            "Nombre pieces principales": pieces,
+            "densite": commune_features.get("densite", 0.0),
+            "population": commune_features.get("population", 0.0),
+            "superficie_km2": commune_features.get("superficie_km2", 0.0),
+            "latitude_centre": commune_features.get("latitude_centre", 0.0),
+            "longitude_centre": commune_features.get("longitude_centre", 0.0)
+        }])
+        
+        # 4. Préparer les données (passer par le preprocessor de la pipeline)
+        preprocessor = pipeline.named_steps.get('scaler') or pipeline.named_steps.get('preprocessor') or pipeline.named_steps.get('pre')
+        if preprocessor:
+            X_processed = preprocessor.transform(df_input)
+        else:
+            X_processed = df_input.values
+        
+        # 5. Générer l'explication SHAP
+        # Pour waterfall, on a besoin d'un objet Explanation, pas juste des valeurs numpy
+        explanation = explainer(X_processed)
+        
+        # L'objet explanation peut contenir plusieurs lignes, on prend la première (et unique)
+        # shap_values_val est le tableau numpy des valeurs SHAP (pour la rétrocompatibilité du JSON de réponse)
+        shap_values_val = explanation.values
+        if len(shap_values_val.shape) > 1: # Si (1, features)
+             shap_values_val = shap_values_val[0]
+        
+        # Assigner les noms de features à l'explication pour que le graphique soit lisible
+        explanation.feature_names = df_input.columns.tolist()
+        
+        # 6. Prédiction
+        prediction = pipeline.predict(df_input)[0]
+        
+        # 7. Générer un graphique SHAP (Summary plot encodé en base64)
+        plt.figure(figsize=(10, 4))
+        try:
+            # Summary plot
+            # shap.summary_plot(shap_values, X_processed, feature_names=df_input.columns, plot_type="bar", show=False)
+            
+            # Waterfall plot (requiert un objet Explanation [index])
+            # On prend explanation[0] car on a une seule prédiction
+            shap.plots.waterfall(explanation[0], show=False)
+            #shap.plots.beeswarm(explanation, show=False)
+            
+            # Convertir en base64
+            buffer = BytesIO()
+            plt.savefig(buffer, format='png', bbox_inches='tight')
+            buffer.seek(0)
+            image_base64 = base64.b64encode(buffer.read()).decode()
+            plt.close()
+            
+            return {
+                "status": "success",
+                "prediction": safe_float(prediction),
+                "input": df_input.to_dict(orient="records")[0],
+                "shap_plot": f"data:image/png;base64,{image_base64}",
+                "shap_values": shap_values_val.tolist() if hasattr(shap_values_val, 'tolist') else shap_values_val,
+                "feature_names": list(df_input.columns)
+            }
+        except Exception as plot_error:
+            logger.error(f"SHAP Plot error: {plot_error}")
+            traceback.print_exc()
+            # Si le graphique échoue, retourner quand même les valeurs SHAP
+            return {
+                "status": "partial_success",
+                "prediction": safe_float(prediction),
+                "input": df_input.to_dict(orient="records")[0],
+                "shap_values": shap_values_val.tolist() if hasattr(shap_values_val, 'tolist') else shap_values_val,
+                "feature_names": list(df_input.columns),
+                "plot_error": str(plot_error)
+            }
+    
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        logger.error(f"Error in shap_explanation: {e}")
+        traceback.print_exc()
+        return {
+            "error": str(e),
+            "status": "error"
+        }
 
 
 @router.post("/predict", tags=["Prediction"], summary="Prévision (requiert token)")

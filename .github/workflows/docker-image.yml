@@ -31,5 +31,5 @@ jobs:
           docker build -t group3-app .
           docker stop group3-app-container || true
           docker rm group3-app-container || true
-          docker run -d --name group3-app-container -p 5003:8000 group3-app
+          docker run -d --name group3-app-container --network p4_network -p 5003:8000 group3-app
           
