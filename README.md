@@ -97,7 +97,7 @@ Un `Dockerfile` est inclus pour permettre de construire une image Docker de l'ap
 docker build -t mon-app:latest .
 ```
 
-    #### Démarrage du conteneur
+#### Démarrage du conteneur
 
 ```bash
 docker run -p 8000:8000 mon-app:latest
@@ -112,6 +112,11 @@ cf fichier main.tf
 ssh group3@ssh2.datalab.centreia.fr
 ```
 
+pour accéder au logs du container sur la vp, à fins de debug : 
+```bash
+docker logs group3-app-container
+```
+
 ### On peut cloner le github du projet
 Sur le serevur distant :
 ```bash
@@ -119,3 +124,4 @@ git clone https://github.com/Mister-proust/R-aliser-une-application-de-pr-vision
 docker build -t g3appimmo .
 docker run -p 5003:8000 g3appimmo
 ```
+
