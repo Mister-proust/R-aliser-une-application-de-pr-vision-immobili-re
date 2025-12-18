@@ -9,3 +9,7 @@ xgboost
 scikit-learn
 prometheus-fastapi-instrumentator
 shap
+base64
+matplotlib
+numpy 
+logging
