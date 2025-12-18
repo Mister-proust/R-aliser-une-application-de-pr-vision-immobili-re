@@ -109,7 +109,7 @@ cf fichier main.tf
 
 ### Connexion a la VM.
 ```bash
-ssh group3@ssh2.datalab.centreia.fr
+ssh group3@ssh3.datalab.centreia.fr
 ```
 
 pour accéder au logs du container sur la vp, à fins de debug : 
