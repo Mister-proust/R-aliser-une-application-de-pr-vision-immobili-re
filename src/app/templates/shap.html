@@ -60,17 +60,39 @@
 
               <form id="shapForm" onsubmit="return false;">
                 <div class="mb-3">
-                  <label for="commune2" class="form-label">Commune</label>
-                  <input id="commune2" class="form-control" placeholder="Ex: Paris" />
+                  <label for="commune2" class="form-label">Commune (nom) ou code INSEE</label>
+                  <input id="commune2" class="form-control" placeholder="Ex: Paris ou 75056" />
                 </div>
 
                 <div class="row">
                   <div class="col-md-6 mb-3">
-                    <label for="surface2" class="form-label">Surface (m²)</label>
-                    <input id="surface2" class="form-control" placeholder="Ex: 75" type="number" min="0" />
+                    <label for="type_voie2" class="form-label">Type de voie</label>
+                    <select id="type_voie2" class="form-select">
+                      <option value="">(Chargement...)</option>
+                    </select>
                   </div>
                   <div class="col-md-6 mb-3">
-                    <label for="rooms2" class="form-label">Pièces</label>
+                    <label for="type_local2" class="form-label">Type local</label>
+                    <select id="type_local2" class="form-select">
+                      <option value="">(Chargement...)</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div class="row">
+                  <div class="col-md-6 mb-3">
+                    <label for="surface_terrain2" class="form-label">Surface terrain (m²)</label>
+                      <input id="surface_terrain2" class="form-control" placeholder="Ex: 0" type="number" min="0" step="any" />
+                  </div>
+                  <div class="col-md-6 mb-3">
+                    <label for="surface2" class="form-label">Surface reelle bati (m²)</label>
+                    <input id="surface2" class="form-control" placeholder="Ex: 75" type="number" min="0" />
+                  </div>
+                </div>
+
+                <div class="row">
+                  <div class="col-md-6 mb-3">
+                    <label for="rooms2" class="form-label">Nombre pieces principales</label>
                     <input id="rooms2" class="form-control" placeholder="Ex: 3" type="number" min="0" />
                   </div>
                 </div>
@@ -109,6 +131,27 @@
       const saveTokenBtn2 = document.getElementById('saveToken2');
       const clearTokenBtn2 = document.getElementById('clearToken2');
 
+      // Populate selects on load
+      async function populateSelects(){
+        try{
+          const res = await fetch('/meta/options');
+          if(!res.ok) return;
+          const data = await res.json();
+          const tv = document.getElementById('type_voie2');
+          const tl = document.getElementById('type_local2');
+          tv.innerHTML = '';
+          tl.innerHTML = '';
+          const addOpt = (el, v) => { const o = document.createElement('option'); o.value = v; o.text = v; el.appendChild(o); };
+          addOpt(tv, '');
+          addOpt(tl, '');
+          (data.type_voie || []).forEach(v => addOpt(tv, v));
+          (data.type_local || []).forEach(v => addOpt(tl, v));
+        }catch(e){
+          // ignore fail
+        }
+      }
+      populateSelects();
+
       function getSavedToken() { return localStorage.getItem('api_token') || ''; }
       function setSavedToken(t) { localStorage.setItem('api_token', t); }
       function clearSavedToken() { localStorage.removeItem('api_token'); }
@@ -129,15 +172,38 @@
       // SHAP explanation request
       document.getElementById('explainBtn').addEventListener('click', async (e) => {
         e.preventDefault();
-        const commune = document.getElementById('commune2').value;
-        const surface = document.getElementById('surface2').value;
-        const rooms = document.getElementById('rooms2').value;
         const out = document.getElementById('shapResult');
         
         out.innerHTML = '<div class="spinner-border" role="status"><span class="visually-hidden">Chargement...</span></div>';
 
         try {
-          const payload = { commune, surface, rooms };
+          // Helper to read and coerce numeric inputs (returns string or number)
+          function readNumber(id){
+            const el = document.getElementById(id);
+            if(!el) return null;
+            const v = el.value;
+            if(v === null || v === undefined || v === "") return null;
+            const n = Number(v);
+            return Number.isFinite(n) ? n : null;
+          }
+
+          // Build payload with property-level fields only. Backend will enrich using communes CSV and encoders.
+          const payload = {};
+          // commune may be name or code_insee
+          const communeVal = document.getElementById('commune2').value;
+          // If commune looks numeric and length matches INSEE (5), send as code_insee
+          const possibleCode = communeVal ? communeVal.trim() : '';
+          if(possibleCode && /^\d{5}$/.test(possibleCode)){
+            payload['code_insee'] = possibleCode;
+          } else {
+            payload['commune'] = possibleCode;
+          }
+          payload['type_voie'] = (document.getElementById('type_voie2').value || '').trim();
+          payload['type_local'] = (document.getElementById('type_local2').value || '').trim();
+          payload['surface_terrain'] = readNumber('surface_terrain2');
+          payload['surface_reelle_bati'] = readNumber('surface2'); // Renamed from surface to surface_reelle_bati
+          payload['nombre_pieces_principales'] = readNumber('rooms2'); // Renamed from rooms to nombre_pieces_principales
+
           const token = getSavedToken();
 
           if (!token) {
@@ -164,7 +230,7 @@
             out.innerHTML = `
               <div class="alert alert-success">
                 <h6>✓ Explication générée</h6>
-                <p>Prédiction : <strong>${data.prediction} €</strong></p>
+                <p>Prédiction : <strong>${Number(data.prediction).toLocaleString('fr-FR')} €</strong></p>
                 <div class="text-center">
                   <img src="${data.shap_plot}" alt="Graphique SHAP" class="shap-plot img-fluid border rounded" />
                 </div>
