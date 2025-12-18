@@ -8,6 +8,8 @@ from fastapi.security import OAuth2PasswordRequestForm
 import pandas as pd
 import app.config as config  # Assurez-vous que ce fichier existe
 import requests
+from app.state import pipeline, explainer, features
+
 
 router = APIRouter()
 
@@ -156,21 +158,6 @@ def get_commune_info(commune_or_insee: str) -> Dict[str, Any]:
 
 
 def prediction_model(payload: Dict[str, Any]) -> Dict[str, Any]:
-    """
-    Charge le modèle et réalise une prédiction de prix immobilier à partir des données utilisateur.
-    """
-    # --- 1️⃣ Chargement du modèle ---
-    # S'assure que config.MODEL_PATH existe
-    model_path = getattr(config, "MODEL_PATH", "model.pkl") 
-    try:
-        with open(model_path, "rb") as f:
-            pipeline = pickle.load(f)
-    except FileNotFoundError:
-        raise HTTPException(status_code=500, detail=f"Fichier modèle introuvable à: {model_path}")
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Erreur lors du chargement du modèle: {e}")
-
-
     # --- 2️⃣ Récupération des infos communes ---
     commune_key = payload.get("code_insee") or payload.get("commune")
     
@@ -216,11 +203,20 @@ def prediction_model(payload: Dict[str, Any]) -> Dict[str, Any]:
         estimated_price = float(prediction[0])
         if pd.isna(estimated_price):
              raise ValueError("La prédiction a retourné NaN")
+        
+        # Transformation input
+        X_input_transformed = pipeline.named_steps["pre"].transform(df_input)
+
+        # SHAP values (1 seule observation)
+        shap_values = explainer.shap_values(X_input_transformed)[0]
+
+        explanation = dict(zip(features, shap_values))
             
         return {
             "estimated_price": estimated_price,
             "currency": "EUR",
-            "input": df_input.to_dict(orient="records")[0]
+            "input": df_input.to_dict(orient="records")[0],
+            "explanation": explanation
         }
     
     except Exception as e:

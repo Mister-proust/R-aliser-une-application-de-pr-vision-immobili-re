@@ -7,18 +7,29 @@ from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 import sys
-
+from contextlib import asynccontextmanager
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from app.routers.endpoints import router as api_router
 import app.config as config
 from prometheus_fastapi_instrumentator import Instrumentator
- 
+from app.state import init_state
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # 🔹 Startup
+    init_state()
+    print("Modèle ML + SHAP chargés en mémoire")
+    yield
+    # 🔹 Shutdown
+    print("Arrêt de l'application")
+
 app = FastAPI(
     title=config.API_TITLE,
     description=config.API_DESCRIPTION,
     docs_url="/docs",
     redoc_url="/redoc",
-    openapi_tags=[]
+    openapi_tags=[],
+    lifespan=lifespan
 )
 
 app.add_middleware(
@@ -39,7 +50,6 @@ templates = Jinja2Templates(directory="templates")
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request):
     return templates.TemplateResponse(request, "index.html")
-
 
 if __name__ == "__main__":
     import uvicorn

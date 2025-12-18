@@ -39,6 +39,10 @@ y = df["Valeur fonciere"]
 # Split des données
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.33, random_state=8)
 
+X_shap_background = X_train.sample(
+    n=min(200, len(X_train)),
+    random_state=8
+)
 # Build a ColumnTransformer that encodes categorical features and scales numeric ones
 preprocessor = ColumnTransformer([
     ("cat", OrdinalEncoder(handle_unknown="use_encoded_value", unknown_value=-1), categorical_features),
@@ -76,7 +80,11 @@ print(f"R²: {r2:.3f}")
 # Sauvegarde du pipeline complet (preprocessor + modèle)
 os.makedirs(os.path.join(DATA_DIR, "models"), exist_ok=True)
 with open(os.path.join(DATA_DIR, "models", "xgb_pipeline.pkl"), "wb") as f:
-    pickle.dump(pipeline, f)
+    pickle.dump({
+        "pipeline": pipeline,
+        "X_shap_background": X_shap_background,
+        "features": features
+    }, f)
 
 # Chargement du pipeline
 with open(os.path.join(DATA_DIR, "models", "xgb_pipeline.pkl"), "rb") as f:
