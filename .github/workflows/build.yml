@@ -30,7 +30,7 @@ jobs:
             IMAGE_NAME=$(echo $IMAGE_NAME | tr '[:upper:]' '[:lower:]')
             
             # 3. On construit l'image (comme vous faisiez)
-            docker build . --file Dockerfile --tag $IMAGE_NAME:latest
+            docker build . --tag $IMAGE_NAME:latest
             
             # 4. On l'envoie dans l'entrepôt
             docker push $IMAGE_NAME:latest
