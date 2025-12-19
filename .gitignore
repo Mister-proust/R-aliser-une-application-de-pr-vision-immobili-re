@@ -215,3 +215,4 @@ notebooks/
 # VSCode workspace
 workspace.code-workspace
 notebook/mlruns
+.vscode/
