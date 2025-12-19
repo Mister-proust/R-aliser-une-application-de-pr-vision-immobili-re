@@ -33,7 +33,7 @@ app.include_router(api_router)  # Include the router
 
 Instrumentator().instrument(app).expose(app, endpoint="/metrics")
 
-templates = Jinja2Templates(directory="src/app/templates")
+templates = Jinja2Templates(directory="templates")
 
 
 @app.get("/", response_class=HTMLResponse)
