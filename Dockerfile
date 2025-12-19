@@ -8,12 +8,12 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 WORKDIR /app
 
 # Copy requirements and install
-COPY requirements_dev.txt .
+COPY requirements.txt .
 RUN pip install --upgrade pip \
-    && pip install --no-cache-dir -r requirements_dev.txt
+    && pip install --no-cache-dir -r requirements.txt
 
 # Copy application code
-COPY src/app /app
+COPY . /app
 
 # ✅ Copy your trained model into the container
 COPY data/models/xgb_pipeline.pkl /data/models/xgb_pipeline.pkl
