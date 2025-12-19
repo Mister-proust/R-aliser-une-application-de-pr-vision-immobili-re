@@ -1,0 +1,50 @@
+- name: Mirvanie
+  hosts: myhosts
+
+  tasks:
+    - name: Créer le dossier de l'application sur la VM
+      file:
+        path: /home/group3/app
+        state: directory
+        owner: group3
+        group: group3
+      
+    - name: Créer le dossier du modèle sur la VM
+      file:
+        path: /home/group3/data/models
+        state: directory
+        owner: group3
+        group: group3
+
+    - name: Copier le dossier de l'application vers la VM
+      copy:
+        src: ./src/app/
+        dest: /home/group3/app/
+    
+    - name: Copier le modèle de l'application vers la VM
+      copy: 
+        src: ./data/models/xgb_pipeline.pkl
+        dest: /home/group3/data/models/xgb_pipeline.pkl
+
+    - name: Ajouter group3 au groupe docker
+      user:
+        name: group3
+        groups: docker
+        append: yes
+
+    - name: Construire l'image Docker
+      community.docker.docker_image:
+        build:
+          path: /home/group3/app
+        name: mon_app_image_g3
+        source: build
+
+    - name: Lancer le conteneur
+      community.docker.docker_container:
+        name: mon_application
+        image: mon_app_image_g3
+        state: started
+        restart_policy: always
+        published_ports:
+          - "5003:8000"  
+
