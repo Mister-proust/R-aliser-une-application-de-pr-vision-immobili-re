@@ -59,7 +59,7 @@ jobs:
             docker pull $IMAGE
 
             # 3. Arrêter l'ancien conteneur s'il existe
-            docker stop appli_immo || true
+            docker stop group3_appli_immo || true
             docker rm group3_appli_immo || true
 
             # 4. Lancer le nouveau
