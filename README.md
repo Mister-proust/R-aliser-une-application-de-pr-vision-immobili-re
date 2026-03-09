@@ -22,7 +22,7 @@ Assurez-vous d'avoir les deux fichiers de données originaux dans le dossier `da
 
 Pour préparer les données et entraîner le modèle, exécutez la commande suivante, qui suivra les étapes définies dans `dvc.yaml`:
 ```bash
-dvc repro
+uv run dvc repro
 ```
 
 ### Lancer l'application
