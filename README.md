@@ -9,12 +9,11 @@ Ce projet a pour but de créer une application web permettant d'estimer la valeu
 ### Installer l'environnement virtuel et les dépendances
 
 ```bash
-python -m venv venv
-# Sur Windows
-venv\Scripts\activate
-# Sur macOS/Linux
-# source venv/bin/activate
-pip install -r requirements.txt
+pip install uv #si python est installé, et installation via python
+#sinon installation globale
+sudo apt install astral-uv
+#puis synchronisation de l'environnement virtuel
+uv sync
 ```
 
 ### Préparer les données et le modèle avec DVC
