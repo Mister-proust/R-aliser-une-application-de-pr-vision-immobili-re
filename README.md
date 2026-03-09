@@ -28,7 +28,7 @@ dvc repro
 ### Lancer l'application
 
 ```bash
-python src/app/main.py
+uv run src/app/main.py
 ```
 
 Accédez à l'interface web à l'adresse [http://127.0.0.1:8000/](http://127.0.0.1:8000/) et à la documentation interactive de l'API (Swagger UI) à [http://127.0.0.1:8000/docs/](http://127.0.0.1:8000/docs/).
