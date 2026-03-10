@@ -87,7 +87,7 @@ id_mutation,date_mutation,numero_disposition,nature_mutation,valeur_fonciere,adr
 - Relations : Commune (code_commune)
 
 **Commune**:
-- Colonnes : code_commune, nom_commune, code_postal, code_departement, ancien_code_commune, ancien_nom_commune
+- Colonnes : code_insee, nom_standard, code_postal, dep_code, niveau_equipements_services, densite, superficie_km2, altitude_moyenne, type_commune_unite_urbaine
 - Clé primaire : code_commune
 - Relations : Transaction (code_commune)
 
