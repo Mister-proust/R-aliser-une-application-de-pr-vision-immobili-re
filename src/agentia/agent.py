@@ -11,6 +11,7 @@ from langchain.agents import create_agent
 
 from agentia.estimation_tool import estimate_property
 from agentia.geocoding_tool import geocoding_search, reverse_geocoding 
+from agentia.tool_bdd import get_database_schema, execute_sql
 
 class RealEstateAgent:
     def __init__(self, model_name: str = "mistral-large-latest", temperature: float = 0.7):
@@ -26,13 +27,16 @@ class RealEstateAgent:
             Tu es un expert immobilier français.
             Tu aides les utilisateurs à estimer le prix de leurs biens immobiliers
             en utilisant l'outil 'estimate_property'.
+            Tu peux aussi utiliser les outils de géocodage 'geocoding_search' et 'reverse_geocoding'
+            pour trouver des informations précises sur les adresses.
+            Les données de transactions immobilières sont stockées dans une base de données SQL, tu peux interagir avec elle via les outils 'get_database_schema' et 'execute_sql', elles peuvent être utilisées pour fournir des réponses précises basées sur les données historiques, proche des biens immobiliers similaires.
             Réponds en français.
             """
         )
 
         self.agent = create_agent(
             model=self.model,
-            tools=[estimate_property, geocoding_search, reverse_geocoding],
+            tools=[estimate_property, geocoding_search, reverse_geocoding, get_database_schema, execute_sql],
             system_prompt=self.system_prompt
         )
 

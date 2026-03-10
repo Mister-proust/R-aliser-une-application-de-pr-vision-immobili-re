@@ -1,7 +1,13 @@
 import sqlite3
+from langchain_core.tools import tool
 
 @tool
 def get_database_schema():
+    """
+    Récupère la structure de la base de données SQLite.
+    Retourne un dictionnaire avec les noms des tables et leurs colonnes.
+    :return: dict
+    """
     connection = sqlite3.connect("bdd/donnees_immo.db")
     cursor = connection.cursor()
 
@@ -24,6 +30,12 @@ def get_database_schema():
 
 @tool
 def execute_sql(query: str):
+    """
+    Exécute une requête SQL SELECT sur la base de données SQLite.
+    Seules les requêtes SELECT sont autorisées pour des raisons de sécurité.
+    :param query: str - La requête SQL à exécuter.
+    :return: list - Les résultats de la requête ou un message d'erreur.
+    """
     connection = sqlite3.connect("bdd/donnees_immo.db")
     cursor = connection.cursor()
     if not query.lower().startswith("select"):
