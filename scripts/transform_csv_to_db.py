@@ -45,6 +45,7 @@ df = df.rename(
         "Surface terrain": "surface_terrain",
         "longitude_centre": "longitude",
         "latitude_centre": "latitude",
+        "Code commune": "code_commune",
     }
 )
 
