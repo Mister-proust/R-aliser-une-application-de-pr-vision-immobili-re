@@ -1,5 +1,6 @@
 import sys
 import os
+import time
 from dotenv import load_dotenv
 import gradio as gr
 
@@ -37,42 +38,108 @@ system_prompt = (
     """
 )
 
+# Création de l'agent
 agent = create_agent(
     model=model,
     tools=[estimate_property, geocoding_search, reverse_geocoding],
     system_prompt=system_prompt
 )
 
-def predict(message, history):
-    history_langchain_format = []
+def format_history(history):
+    """Convertit l'historique Gradio en messages LangChain."""
+    messages = []
     for msg in history:
-        if isinstance(msg, dict):
-            if msg["role"] == "user":
-                history_langchain_format.append(HumanMessage(content=msg["content"]))
-            elif msg["role"] == "assistant":
-                history_langchain_format.append(AIMessage(content=msg["content"]))
-        elif isinstance(msg, (list, tuple)):
-            user_msg, bot_msg = msg
-            if user_msg:
-                history_langchain_format.append(HumanMessage(content=user_msg))
-            if bot_msg:
-                history_langchain_format.append(AIMessage(content=bot_msg))
-                
-    history_langchain_format.append(HumanMessage(content=message))
-    
-    response = agent.invoke({"messages": history_langchain_format})
-    
-    return response["messages"][-1].content
+        if msg["role"] == "user":
+            messages.append(HumanMessage(content=msg["content"]))
+        elif msg["role"] == "assistant":
+            messages.append(AIMessage(content=msg["content"]))
+    return messages
 
-demo = gr.ChatInterface(
-    predict,
-    title="Agent Immobilier Expert 🏠",
-    description="Posez vos questions sur l'estimation de biens et le géocodage d'adresses en France.",
-    examples=[
-        "Estime ma maison de 100m² avec 4 pièces à Blois.",
-        "Quelles sont les coordonnées du 4 Impasse de l'ancienne école normale à Tours ?"
-    ]
-)
+with gr.Blocks(title="Agent Immobilier Expert 🏠", fill_height=True) as demo:
+    gr.Markdown("# Agent Immobilier Expert 🏠")
+    chatbot = gr.Chatbot(label="Conversation", show_label=False, scale=1)
+    
+    with gr.Row():
+        msg = gr.Textbox(
+            label="Votre question",
+            placeholder="Ex: Estime ma maison de 100m² à Tours...",
+            scale=4
+        )
+        submit_btn = gr.Button("Envoyer", variant="primary", scale=1)
+
+    clear = gr.ClearButton([msg, chatbot], value="Effacer la conversation")
+
+    gr.Examples(
+        examples=[
+            "Estime ma maison de 100m² avec 4 pièces à Blois.",
+            "Quelles sont les coordonnées du MAME à Tours ?"
+        ],
+        inputs=msg
+    )
+
+    def user(user_message, history):
+        return "", history + [{"role": "user", "content": user_message}]
+
+    def bot(history):
+        langchain_history = format_history(history)
+        
+        try:
+            final_text = ""
+            for step in agent.stream({"messages": langchain_history}):
+                # Visualisation de l'appel des outils
+                if "agent" in step:
+                    msg_obj = step["agent"]["messages"][-1]
+                    if hasattr(msg_obj, "tool_calls") and msg_obj.tool_calls:
+                        for tool_call in msg_obj.tool_calls:
+                            tool_name = tool_call["name"]
+                            tool_args = tool_call["args"]
+                            history.append({
+                                "role": "assistant", 
+                                "content": f"Réflexion : Utilisation de {tool_name} avec {tool_args}",
+                                "metadata": {"title": f"🛠️ Outil : {tool_name}"}
+                            })
+                            yield history
+                
+                elif "tools" in step:
+                    msg_obj = step["tools"]["messages"][-1]
+                    tool_output = msg_obj.content
+                    history.append({
+                        "role": "assistant", 
+                        "content": tool_output,
+                        "metadata": {"title": "✅ Résultat de l'outil"}
+                    })
+                    yield history
+                
+                if "agent" in step:
+                    msg_obj = step["agent"]["messages"][-1]
+                    if not (hasattr(msg_obj, "tool_calls") and msg_obj.tool_calls):
+                        final_text = msg_obj.content
+
+            if final_text:
+                history.append({"role": "assistant", "content": ""})
+                for char in final_text:
+                    history[-1]["content"] += char
+                    time.sleep(0.01) 
+                    yield history
+            else:
+                res = agent.invoke({"messages": langchain_history})
+                final_text = res["messages"][-1].content
+                history.append({"role": "assistant", "content": ""})
+                for char in final_text:
+                    history[-1]["content"] += char
+                    time.sleep(0.01)
+                    yield history
+
+        except Exception as e:
+            history.append({"role": "assistant", "content": f"Désolé, une erreur est survenue : {str(e)}"})
+            yield history
+
+    msg.submit(user, [msg, chatbot], [msg, chatbot], queue=False).then(
+        bot, chatbot, chatbot
+    )
+    submit_btn.click(user, [msg, chatbot], [msg, chatbot], queue=False).then(
+        bot, chatbot, chatbot
+    )
 
 if __name__ == "__main__":
     demo.launch()
