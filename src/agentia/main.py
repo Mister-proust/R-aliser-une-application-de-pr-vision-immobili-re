@@ -9,6 +9,8 @@ sys.path.extend([os.path.dirname(os.path.dirname(os.path.abspath(__file__))), os
 from langchain_core.messages import AIMessage, HumanMessage
 from langchain_mistralai import ChatMistralAI
 from langchain.agents import create_agent
+from langchain.agents.middleware import ModelRetryMiddleware, TodoListMiddleware, ModelCallLimitMiddleware
+
 from agentia.estimation_tool import estimate_property
 from agentia.geocoding_tool import geocoding_search, reverse_geocoding
 from agentia.tool_bdd import get_database_schema, execute_sql
@@ -44,7 +46,19 @@ system_prompt = (
 agent = create_agent(
     model=model,
     tools=[estimate_property, geocoding_search, reverse_geocoding, get_database_schema, execute_sql],
-    system_prompt=system_prompt
+    system_prompt=system_prompt,
+    middleware=[
+        ModelRetryMiddleware(
+            max_retries=3,
+            backoff_factor=2.0,
+            initial_delay=1.0,
+        ),
+        ModelCallLimitMiddleware(
+            thread_limit=25,
+            run_limit=25,
+            exit_behavior="end",
+        ), # type: ignore
+    ], 
 )
 
 def format_history(history):
@@ -98,19 +112,28 @@ with gr.Blocks(title="Agent Immobilier Expert 🏠", fill_height=True) as demo:
                             history.append({
                                 "role": "assistant", 
                                 "content": f"Réflexion : Utilisation de {tool_name} avec {tool_args}",
-                                "metadata": {"title": f"🛠️ Outil : {tool_name}"}
+                                "metadata": {
+                                    "title": f"🛠️ Outil : {tool_name}",
+                                    "status": "done" 
+                                }
                             })
                             yield history
                 
                 elif "tools" in step:
                     msg_obj = step["tools"]["messages"][-1]
                     tool_output = msg_obj.content
+                    tool_name = msg_obj.name 
+                    
                     history.append({
                         "role": "assistant", 
                         "content": tool_output,
-                        "metadata": {"title": "✅ Résultat de l'outil"}
+                        "metadata": {
+                            "title": f"✅ Résultat de l'outil : {tool_name}", 
+                            "status": "done"
+                        }
                     })
                     yield history
+
                 
                 if "agent" in step:
                     msg_obj = step["agent"]["messages"][-1]
