@@ -37,7 +37,6 @@ def execute_sql(query: str):
     :param query: str - La requête SQL à exécuter.
     :return: list - Les résultats de la requête ou un message d'erreur.
     """
-    logging.warning(query)
     connection = sqlite3.connect("bdd/donnees_immo.db")
     cursor = connection.cursor()
     if not query.lower().startswith("select"):
@@ -49,5 +48,4 @@ def execute_sql(query: str):
         result = str(e)
 
     connection.close()
-    logging.warning(result)
     return result
