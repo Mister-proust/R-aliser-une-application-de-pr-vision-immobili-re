@@ -226,6 +226,20 @@ with gr.Blocks(title="Agent Immobilier Expert 🏠", fill_height=True) as demo:
         queue=False
     )
 
+    def api_chat(user_message, history):
+        history = history or []
+        history.append({"role": "user", "content": user_message})
+        for step in bot(history):
+            yield step
+
+    api_btn = gr.Button("API", visible=False)
+    api_btn.click(
+        fn=api_chat,
+        inputs=[msg, chatbot],
+        outputs=[chatbot],
+        api_name="chat"
+    )
+
     demo.queue(default_concurrency_limit=1)
 
 if __name__ == "__main__":
