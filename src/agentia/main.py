@@ -4,12 +4,15 @@ import time
 from dotenv import load_dotenv
 import gradio as gr
 
-sys.path.extend([os.path.dirname(os.path.dirname(os.path.abspath(__file__))), os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))])
+sys.path.extend([
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+    os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+])
 
 from langchain_core.messages import AIMessage, HumanMessage
 from langchain_mistralai import ChatMistralAI
 from langchain.agents import create_agent
-from langchain.agents.middleware import ModelRetryMiddleware, TodoListMiddleware, ModelCallLimitMiddleware
+from langchain.agents.middleware import ModelRetryMiddleware, ModelCallLimitMiddleware
 
 from agentia.estimation_tool import estimate_property
 from agentia.geocoding_tool import geocoding_search, reverse_geocoding
@@ -25,56 +28,74 @@ if os.getenv("LANGSMITH_API_KEY"):
         os.environ["LANGCHAIN_PROJECT"] = os.getenv("LANGSMITH_PROJECT")
 
 model = ChatMistralAI(
-    model="mistral-large-latest", 
+    model="mistral-large-latest",
     temperature=0.7,
     max_tokens=2048,
 )
 
-system_prompt = (
-    """
-    Tu es un expert immobilier français.
-    Tu aides les utilisateurs à estimer le prix de leurs biens immobiliers
-    en utilisant l'outil 'estimate_property'.
-    Tu peux aussi utiliser les outils de géocodage 'geocoding_search' et 'reverse_geocoding'
-    pour trouver des informations précises sur les adresses.
-    Les données de transactions immobilières sont stockées dans une base de données SQL, tu peux interagir avec elle via les outils 'get_database_schema' et 'execute_sql', elles peuvent être utilisées pour fournir des réponses précises basées sur les données historiques, proche des biens immobiliers similaires.
-    Réponds en français.
-    """
-)
+system_prompt = """
+Tu es un expert immobilier français.
+Tu aides les utilisateurs à estimer le prix de leurs biens immobiliers
+en utilisant l'outil 'estimate_property'.
+Tu peux aussi utiliser les outils de géocodage 'geocoding_search' et 'reverse_geocoding'
+pour trouver des informations précises sur les adresses.
+Les données de transactions immobilières sont stockées dans une base de données SQL, tu peux interagir avec elle via les outils 'get_database_schema' et 'execute_sql', elles peuvent être utilisées pour fournir des réponses précises basées sur les données historiques, proche des biens immobiliers similaires.
+Réponds en français.
+"""
 
-# Création de l'agent
 agent = create_agent(
     model=model,
     tools=[estimate_property, geocoding_search, reverse_geocoding, get_database_schema, execute_sql],
     system_prompt=system_prompt,
-    middleware=[
-        ModelRetryMiddleware(
-            max_retries=3,
-            backoff_factor=2.0,
-            initial_delay=1.0,
-        ),
-        ModelCallLimitMiddleware(
-            thread_limit=25,
-            run_limit=25,
-            exit_behavior="end",
-        ), # type: ignore
-    ], 
+    # middleware=[
+    #     ModelRetryMiddleware(
+    #         max_retries=3,
+    #         backoff_factor=2.0,
+    #         initial_delay=1.0,
+    #     ),
+    #     ModelCallLimitMiddleware(
+    #         thread_limit=25,
+    #         run_limit=25,
+    #         exit_behavior="end",
+    #     ), # type: ignore
+    # ],
 )
 
+def extract_text(content):
+    if isinstance(content, str):
+        return content
+    if isinstance(content, list):
+        parts = []
+        for block in content:
+            if isinstance(block, dict):
+                if block.get("type") == "text" and "text" in block:
+                    parts.append(block["text"])
+                elif "content" in block and isinstance(block["content"], str):
+                    parts.append(block["content"])
+            else:
+                parts.append(str(block))
+        return "".join(parts).strip()
+    return str(content)
+
 def format_history(history):
-    """Convertit l'historique Gradio en messages LangChain."""
     messages = []
     for msg in history:
         if msg["role"] == "user":
             messages.append(HumanMessage(content=msg["content"]))
-        elif msg["role"] == "assistant":
+        elif msg["role"] == "assistant" and not msg.get("metadata"):
             messages.append(AIMessage(content=msg["content"]))
     return messages
 
 with gr.Blocks(title="Agent Immobilier Expert 🏠", fill_height=True) as demo:
     gr.Markdown("# Agent Immobilier Expert 🏠")
-    chatbot = gr.Chatbot(label="Conversation", show_label=False, scale=1)
-    
+    busy = gr.State(False)
+
+    chatbot = gr.Chatbot(
+        label="Conversation",
+        show_label=False,
+        scale=1,
+    )
+
     with gr.Row():
         msg = gr.Textbox(
             label="Votre question",
@@ -83,7 +104,7 @@ with gr.Blocks(title="Agent Immobilier Expert 🏠", fill_height=True) as demo:
         )
         submit_btn = gr.Button("Envoyer", variant="primary", scale=1)
 
-    clear = gr.ClearButton([msg, chatbot], value="Effacer la conversation")
+    gr.ClearButton([msg, chatbot], value="Effacer la conversation")
 
     gr.Examples(
         examples=[
@@ -93,78 +114,101 @@ with gr.Blocks(title="Agent Immobilier Expert 🏠", fill_height=True) as demo:
         inputs=msg
     )
 
-    def user(user_message, history):
-        return "", history + [{"role": "user", "content": user_message}]
+    def user(user_message, history, is_busy):
+        history = history or []
+        if is_busy:
+            return gr.update(), gr.update(), history, True
+        if not user_message or not user_message.strip():
+            return gr.update(value=""), gr.update(interactive=True), history, False
+        history = history + [{"role": "user", "content": user_message}]
+        return gr.update(value="", interactive=False), gr.update(interactive=False), history, True
 
     def bot(history):
+        history = history or []
         langchain_history = format_history(history)
-        
+
         try:
-            final_text = ""
-            for step in agent.stream({"messages": langchain_history}):
-                # Visualisation de l'appel des outils
-                if "agent" in step:
-                    msg_obj = step["agent"]["messages"][-1]
-                    if hasattr(msg_obj, "tool_calls") and msg_obj.tool_calls:
+            final_message_index = None
+
+            for step in agent.stream(
+                {"messages": langchain_history},
+                stream_mode="updates"
+            ):
+                if "model" in step:
+                    msg_obj = step["model"]["messages"][-1]
+
+                    if getattr(msg_obj, "tool_calls", None):
                         for tool_call in msg_obj.tool_calls:
                             tool_name = tool_call["name"]
                             tool_args = tool_call["args"]
                             history.append({
-                                "role": "assistant", 
+                                "role": "assistant",
                                 "content": f"Réflexion : Utilisation de {tool_name} avec {tool_args}",
                                 "metadata": {
-                                    "title": f"🛠️ Outil : {tool_name}",
-                                    "status": "done" 
+                                    "title": f"Outil : {tool_name}",
+                                    "status": "done"
                                 }
                             })
                             yield history
-                
-                elif "tools" in step:
+                    else:
+                        final_text = extract_text(msg_obj.content)
+                        if final_text:
+                            if final_message_index is None:
+                                history.append({"role": "assistant", "content": ""})
+                                final_message_index = len(history) - 1
+                            current = ""
+                            for char in final_text:
+                                current += char
+                                history[final_message_index]["content"] = current
+                                time.sleep(0.01)
+                                yield history
+
+                if "tools" in step:
                     msg_obj = step["tools"]["messages"][-1]
-                    tool_output = msg_obj.content
-                    tool_name = msg_obj.name 
-                    
+                    tool_output = extract_text(msg_obj.content)
+                    tool_name = getattr(msg_obj, "name", "outil")
                     history.append({
-                        "role": "assistant", 
+                        "role": "assistant",
                         "content": tool_output,
                         "metadata": {
-                            "title": f"✅ Résultat de l'outil : {tool_name}", 
+                            "title": f"✅ Résultat de l'outil : {tool_name}",
                             "status": "done"
                         }
                     })
                     yield history
 
-                
-                if "agent" in step:
-                    msg_obj = step["agent"]["messages"][-1]
-                    if not (hasattr(msg_obj, "tool_calls") and msg_obj.tool_calls):
-                        final_text = msg_obj.content
-
-            if final_text:
-                history.append({"role": "assistant", "content": ""})
-                for char in final_text:
-                    history[-1]["content"] += char
-                    time.sleep(0.01) 
-                    yield history
-            else:
-                res = agent.invoke({"messages": langchain_history})
-                final_text = res["messages"][-1].content
-                history.append({"role": "assistant", "content": ""})
-                for char in final_text:
-                    history[-1]["content"] += char
-                    time.sleep(0.01)
-                    yield history
-
         except Exception as e:
-            history.append({"role": "assistant", "content": f"Désolé, une erreur est survenue : {str(e)}"})
+            history.append({
+                "role": "assistant",
+                "content": f"Désolé, une erreur est survenue : {str(e)}"
+            })
             yield history
 
-    msg.submit(user, [msg, chatbot], [msg, chatbot], queue=False).then(
-        bot, chatbot, chatbot
+    def unlock():
+        return gr.update(interactive=True), gr.update(interactive=True), False
+
+    gr.on(
+        triggers=[msg.submit, submit_btn.click],
+        fn=user,
+        inputs=[msg, chatbot, busy],
+        outputs=[msg, submit_btn, chatbot, busy],
+        trigger_mode="once",
+        concurrency_limit=1,
+        queue=True
+    ).then(
+        bot,
+        inputs=chatbot,
+        outputs=chatbot,
+        queue=True,
+        concurrency_limit=1
+    ).then(
+        unlock,
+        inputs=None,
+        outputs=[msg, submit_btn, busy],
+        queue=False
     )
-    submit_btn.click(user, [msg, chatbot], [msg, chatbot], queue=False).then(
-        bot, chatbot, chatbot
-    )
+
+    demo.queue(default_concurrency_limit=1)
 
 if __name__ == "__main__":
     demo.launch()
