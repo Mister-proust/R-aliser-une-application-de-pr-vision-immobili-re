@@ -9,6 +9,7 @@ connection = sqlite3.connect("donnees_immo.db")
 # Charger le fichier CSV dans un DataFrame pandas
 df = pd.read_csv("../data/clean_dvf.csv", sep=";")
 
+print(df.columns.tolist())
 # Garder les colonnes suivantes : "id_transaction, Date mutation, Nature mutation, Valeur fonciere, Voie, Surface reelle bati, Nombre pieces principales, Surface terrain, longitude_centre et latitude_centre avec clé primaire id_transaction
 df = df[
     [
@@ -17,7 +18,7 @@ df = df[
         "Nature mutation",
         "Valeur fonciere",
         "Voie",
-        "Code commune",
+        "code_insee",
         "Surface reelle bati",
         "Nombre pieces principales",
         "Surface terrain",
@@ -45,7 +46,7 @@ df = df.rename(
         "Surface terrain": "surface_terrain",
         "longitude_centre": "longitude",
         "latitude_centre": "latitude",
-        "Code commune": "code_commune",
+        "code_insee": "code_commune",
     }
 )
 
