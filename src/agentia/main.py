@@ -48,18 +48,6 @@ agent = create_agent(
     model=model,
     tools=[estimate_property, geocoding_search, reverse_geocoding, get_database_schema, execute_sql],
     system_prompt=system_prompt,
-    # middleware=[
-    #     ModelRetryMiddleware(
-    #         max_retries=3,
-    #         backoff_factor=2.0,
-    #         initial_delay=1.0,
-    #     ),
-    #     ModelCallLimitMiddleware(
-    #         thread_limit=25,
-    #         run_limit=25,
-    #         exit_behavior="end",
-    #     ), # type: ignore
-    # ],
 )
 
 def extract_text(content):
@@ -94,7 +82,7 @@ with gr.Blocks(title="Agent Immobilier Expert 🏠", fill_height=True) as demo:
     chatbot = gr.Chatbot(
         label="Conversation",
         show_label=False,
-        scale=1,
+        scale=1
     )
 
     with gr.Row():
@@ -130,6 +118,7 @@ with gr.Blocks(title="Agent Immobilier Expert 🏠", fill_height=True) as demo:
 
         try:
             final_message_index = None
+            tool_message_index = None 
 
             for step in agent.stream(
                 {"messages": langchain_history},
@@ -142,21 +131,33 @@ with gr.Blocks(title="Agent Immobilier Expert 🏠", fill_height=True) as demo:
                         for tool_call in msg_obj.tool_calls:
                             tool_name = tool_call["name"]
                             tool_args = tool_call["args"]
-                            history.append({
-                                "role": "assistant",
-                                "content": f"Réflexion : Utilisation de {tool_name} avec {tool_args}",
-                                "metadata": {
-                                    "title": f"Outil : {tool_name}",
-                                    "status": "done"
-                                }
-                            })
+                            
+                            texte_appel = f"**Appel de `{tool_name}`** avec les paramètres : `{tool_args}`\n\n"
+                            
+                            if tool_message_index is None:
+                                history.append({
+                                    "role": "assistant",
+                                    "content": texte_appel,
+                                    "metadata": {
+                                        "title": "🛠️ Étapes de recherche",
+                                        "status": "pending" 
+                                    }
+                                })
+                                tool_message_index = len(history) - 1
+                            else:
+                                history[tool_message_index]["content"] += texte_appel
                             yield history
+                            
                     else:
                         final_text = extract_text(msg_obj.content)
                         if final_text:
+                            if tool_message_index is not None:
+                                history[tool_message_index]["metadata"]["status"] = "done"
+                                
                             if final_message_index is None:
                                 history.append({"role": "assistant", "content": ""})
                                 final_message_index = len(history) - 1
+                                
                             current = ""
                             for char in final_text:
                                 current += char
@@ -167,23 +168,26 @@ with gr.Blocks(title="Agent Immobilier Expert 🏠", fill_height=True) as demo:
                 if "tools" in step:
                     msg_obj = step["tools"]["messages"][-1]
                     tool_output = extract_text(msg_obj.content)
-                    tool_name = getattr(msg_obj, "name", "outil")
-                    history.append({
-                        "role": "assistant",
-                        "content": tool_output,
-                        "metadata": {
-                            "title": f"✅ Résultat de l'outil : {tool_name}",
-                            "status": "done"
-                        }
-                    })
-                    yield history
+                    
+                    if tool_message_index is not None:
+                        history[tool_message_index]["content"] += f"> **Résultat :** {tool_output}\n\n---\n\n"
+                        yield history
 
         except Exception as e:
+            if tool_message_index is not None and tool_message_index < len(history):
+                 history[tool_message_index]["metadata"]["status"] = "done"
+                 
             history.append({
                 "role": "assistant",
                 "content": f"Désolé, une erreur est survenue : {str(e)}"
             })
             yield history
+
+    def handle_retry(history, retry_data: gr.RetryData):
+        new_history = history[:retry_data.index + 1]
+        yield gr.update(interactive=False), gr.update(interactive=False), new_history, True
+        for bot_step in bot(new_history):
+            yield gr.update(interactive=False), gr.update(interactive=False), bot_step, True
 
     def unlock():
         return gr.update(interactive=True), gr.update(interactive=True), False
@@ -200,6 +204,19 @@ with gr.Blocks(title="Agent Immobilier Expert 🏠", fill_height=True) as demo:
         bot,
         inputs=chatbot,
         outputs=chatbot,
+        queue=True,
+        concurrency_limit=1
+    ).then(
+        unlock,
+        inputs=None,
+        outputs=[msg, submit_btn, busy],
+        queue=False
+    )
+
+    chatbot.retry(
+        fn=handle_retry,
+        inputs=[chatbot],
+        outputs=[msg, submit_btn, chatbot, busy],
         queue=True,
         concurrency_limit=1
     ).then(
