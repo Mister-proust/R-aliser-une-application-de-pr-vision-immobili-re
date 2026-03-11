@@ -55,14 +55,16 @@ Variables optionnelles pour le suivi LangSmith :
 
 ```
 LANGSMITH_API_KEY=<votre_clé_api_langsmith>
-LANGSMITH_ENDPOINT=https://api.smith.langchain.com
+LANGSMITH_ENDPOINT=https://eu.api.smith.langchain.com ou https://api.smith.langchain.com
 LANGSMITH_PROJECT=<nom_de_votre_projet>
 ```
 
 #### Démarrer l'interface Gradio
 
 ```bash
-uv run src/agentia/main.py
+cd src
+cd agentia
+uv run main.py
 ```
 
 Accédez à l'interface de l'agent à l'adresse [http://127.0.0.1:7860/](http://127.0.0.1:7860/).
