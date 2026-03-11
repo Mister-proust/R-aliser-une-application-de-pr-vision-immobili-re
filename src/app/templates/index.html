@@ -8,7 +8,6 @@
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     
     <style>
-      /* Styles du widget de chat Gradio */
       .chat-widget {
           position: fixed;
           bottom: 20px;
@@ -97,7 +96,6 @@
           cursor: pointer;
       }
       
-      /* Style des bulles de messages */
       .message {
           margin: 8px 0;
           padding: 10px 14px;
@@ -121,7 +119,6 @@
           margin-bottom: 0;
       }
 
-      /* Mise en forme du Markdown dans les bulles du bot */
       .bot-message pre {
           background: #2d2d2d;
           color: #f8f8f2;
@@ -156,7 +153,6 @@
           margin-left: 0;
       }
 
-      /* Animation de chargement */
       .typing-indicator {
           display: flex;
           gap: 4px;
@@ -376,7 +372,7 @@
       });
     </script>
 
-    <script type="module">
+       <script type="module">
         import { Client } from "https://cdn.jsdelivr.net/npm/@gradio/client/dist/index.min.js";
         
         async function initChatWidget() {
@@ -386,7 +382,6 @@
             try {
                 client = await Client.connect(gradioAppUrl);
             } catch (err) {
-                console.warn("L'application Gradio locale n'est pas accessible.");
             }
             
             const chatToggle = document.getElementById('chat-toggle');
@@ -408,31 +403,18 @@
             let isBusy = false;
             const typingHtml = '<div class="typing-indicator"><span></span><span></span><span></span></div>';
 
-            // Extracteur de texte récursif ultra-robuste
             function extractText(val) {
                 if (val === null || val === undefined) return "";
                 if (typeof val === 'string') return val;
-                
-                // Si c'est un tableau de composants (fréquent avec les nouvelles APIs Gradio/LangChain)
-                if (Array.isArray(val)) {
-                    return val.map(v => extractText(v)).join("\n");
-                }
-                
-                // Si c'est un objet (dictionnaire)
+                if (Array.isArray(val)) return val.map(v => extractText(v)).join("\n");
                 if (typeof val === 'object') {
                     if (val.text !== undefined) return extractText(val.text);
                     if (val.value !== undefined) return extractText(val.value);
                     if (val.content !== undefined) return extractText(val.content);
                     if (val.name !== undefined) return extractText(val.name);
-                    
-                    // Si on ne trouve pas de clés connues, on stringify proprement pour débugger au lieu de [object Object]
-                    try {
-                        return "```json\n" + JSON.stringify(val, null, 2) + "\n```";
-                    } catch(e) {
-                        return "Structure complexe non lisible";
-                    }
+                    try { return "```json\n" + JSON.stringify(val, null, 2) + "\n```"; } 
+                    catch(e) { return "Structure complexe"; }
                 }
-                
                 return String(val);
             }
 
@@ -444,7 +426,6 @@
                 if (isRawHtml) {
                     messageDiv.innerHTML = contentStr;
                 } else if (sender === 'bot') {
-                    // On parse le markdown pour le bot
                     messageDiv.innerHTML = marked.parse(contentStr);
                 } else {
                     messageDiv.textContent = contentStr;
@@ -465,13 +446,30 @@
                 }
 
                 isBusy = true;
-                const loadingId = "loading-" + Date.now();
-                appendBubble(typingHtml, 'bot', true, loadingId);
+                sendButton.disabled = true; 
+                
+                appendBubble(typingHtml, 'bot', true);
 
                 try {
                     const stream = client.submit("/chat", [userMessage, chatHistory]);
+                    
+                    let timeoutId = null;
+
+                    const unlockInterface = () => {
+                        isBusy = false;
+                        sendButton.disabled = false;
+                        if(timeoutId) clearTimeout(timeoutId);
+                        
+                        const allBubbles = messagesContainer.querySelectorAll('.bot-message');
+                        allBubbles.forEach(b => {
+                            if(b.innerHTML === typingHtml || b.innerHTML.trim() === "") b.remove();
+                        });
+                    };
 
                     for await (const event of stream) {
+                        if (timeoutId) clearTimeout(timeoutId);
+                        timeoutId = setTimeout(unlockInterface, 2500);
+
                         if (event.type === "data" || event.type === "update") {
                             const updatedHistory = event.data[0];
                             if (updatedHistory && Array.isArray(updatedHistory)) {
@@ -479,24 +477,22 @@
                                 messagesContainer.innerHTML = '';
                                 
                                 chatHistory.forEach((msg) => {
-                                    // Cas 1 : Gradio nous renvoie le format tuples [[user_msg, bot_msg]]
                                     if (Array.isArray(msg)) {
                                         if (msg[0] !== null && msg[0] !== undefined) {
                                             appendBubble(extractText(msg[0]), 'user');
                                         }
                                         if (msg[1] !== null && msg[1] !== undefined) {
                                             const bTxt = extractText(msg[1]);
-                                            if (bTxt.trim() === "") appendBubble(typingHtml, 'bot', true);
-                                            else appendBubble(bTxt, 'bot');
+                                            if (bTxt.trim() === "") {
+                                                appendBubble(typingHtml, 'bot', true);
+                                            } else {
+                                                appendBubble(bTxt, 'bot');
+                                            }
                                         } else {
                                             appendBubble(typingHtml, 'bot', true);
                                         }
-                                    } 
-                                    // Cas 2 : Gradio nous renvoie le format messages [{role: "user", content: "..."}]
-                                    else if (msg && typeof msg === 'object') {
+                                    } else if (msg && typeof msg === 'object') {
                                         const sender = msg.role === 'user' ? 'user' : 'bot';
-                                        
-                                        // On passe tout l'objet msg à l'extracteur qui trouvera la clé 'content'
                                         let text = extractText(msg.content || msg.text || msg);
                                         
                                         if (sender === 'bot' && text.trim() === "") {
@@ -506,14 +502,23 @@
                                         }
                                     }
                                 });
+                                
+                                if (isBusy) {
+                                    const lastChild = messagesContainer.lastElementChild;
+                                    if (!lastChild || lastChild.innerHTML !== typingHtml) {
+                                        appendBubble(typingHtml, 'bot', true);
+                                    }
+                                }
                             }
                         }
                     }
+                    
+                    unlockInterface();
+
                 } catch (error) {
-                    const errorEl = document.getElementById(loadingId);
-                    if(errorEl) errorEl.innerHTML = "❌ Une erreur s'est produite lors de la génération.";
+                    isBusy = false;
+                    sendButton.disabled = false;
                 }
-                isBusy = false;
             }
         
             sendButton.addEventListener('click', sendMessage);
