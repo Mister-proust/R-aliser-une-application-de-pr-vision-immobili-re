@@ -25,13 +25,47 @@ Pour préparer les données et entraîner le modèle, exécutez la commande suiv
 uv run dvc repro
 ```
 
-### Lancer l'application
+### Lancer l'application FastAPI
 
 ```bash
 uv run src/app/main.py
 ```
 
 Accédez à l'interface web à l'adresse [http://127.0.0.1:8000/](http://127.0.0.1:8000/) et à la documentation interactive de l'API (Swagger UI) à [http://127.0.0.1:8000/docs/](http://127.0.0.1:8000/docs/).
+
+### Lancer l'application Gradio (Agent Immobilier Expert)
+
+L'application Gradio propose un agent conversationnel pour estimer la valeur de biens immobiliers.
+
+#### Configurer les variables d'environnement
+
+Copiez le fichier `template.env` en `.env` et renseignez vos clés :
+
+```bash
+cp template.env .env
+```
+
+Éditez le fichier `.env` avec au minimum votre clé API Mistral :
+
+```
+MISTRAL_API_KEY=<votre_clé_api_mistral>
+```
+
+Variables optionnelles pour le suivi LangSmith :
+
+```
+LANGSMITH_API_KEY=<votre_clé_api_langsmith>
+LANGSMITH_ENDPOINT=https://api.smith.langchain.com
+LANGSMITH_PROJECT=<nom_de_votre_projet>
+```
+
+#### Démarrer l'interface Gradio
+
+```bash
+uv run src/agentia/main.py
+```
+
+Accédez à l'interface de l'agent à l'adresse [http://127.0.0.1:7860/](http://127.0.0.1:7860/).
 
 ---
 
