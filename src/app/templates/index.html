@@ -27,17 +27,29 @@
           box-shadow: 0 4px 6px rgba(0,0,0,0.1);
       }
       .chat-container {
-          position: fixed;
-          bottom: 80px;
-          right: 20px;
-          width: 1000px;
-          height: 700px;
-          background: white;
-          border-radius: 10px;
-          box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-          display: flex;
-          flex-direction: column;
-      }
+        position: fixed;
+        bottom: 80px;
+        right: 20px;
+        height: calc(100vh - 150px);
+        max-height: 900px;
+        width: 55vw;
+        min-width: 350px;
+        max-width: 800px;
+        background: white;
+        border-radius: 10px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        display: flex;
+        flex-direction: column;
+    }
+
+    @media (max-width: 768px) {
+        .chat-container {
+            width: calc(100vw - 40px);
+            height: calc(100vh - 100px);
+            max-width: none;
+        }
+    }
+
       .chat-container.hidden {
           display: none;
       }
