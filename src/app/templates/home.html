@@ -15,7 +15,9 @@
 
     <!-- Axios pour appeler l'API -->
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
-    
+    <!-- 🎨 Google Fonts ultra-bizarres -->
+    <link href="https://fonts.googleapis.com/css2?family=Boogaloo&family=Permanent+Marker&family=Press+Start+2P&family=Pacifico&family=Creepster&family=Lobster+Two:ital@1&display=swap" rel="stylesheet">
+
     <style>
       .chat-widget {
           position: fixed;
@@ -209,9 +211,221 @@
         margin-bottom: 5px;
     }
 
+    /* ============================================
+       🎉 MODE CHAOS TOTAL ACTIVÉ 🎉
+    ============================================ */
+
+    @keyframes rainbowText {
+        0%   { color: #ff0000; }
+        14%  { color: #ff7700; }
+        28%  { color: #ffff00; }
+        42%  { color: #00cc00; }
+        57%  { color: #0000ff; }
+        71%  { color: #8b00ff; }
+        85%  { color: #ff00ff; }
+        100% { color: #ff0000; }
+    }
+    @keyframes bgShift {
+        0%   { background-position: 0% 50%; }
+        50%  { background-position: 100% 50%; }
+        100% { background-position: 0% 50%; }
+    }
+    @keyframes spinAround {
+        from { transform: rotate(0deg); }
+        to   { transform: rotate(360deg); }
+    }
+    @keyframes wobbleDance {
+        0%,100% { transform: rotate(0deg) translateX(0); }
+        20%     { transform: rotate(-6deg) translateX(-10px); }
+        40%     { transform: rotate(5deg) translateX(8px); }
+        60%     { transform: rotate(-3deg) translateX(-5px); }
+        80%     { transform: rotate(2deg) translateX(4px); }
+    }
+    @keyframes floatUp {
+        0%,100% { transform: translateY(0px); }
+        50%     { transform: translateY(-20px); }
+    }
+    @keyframes neonPulse {
+        0%,100% {
+            text-shadow: 0 0 7px #fff, 0 0 10px #fff, 0 0 20px #ff00ff, 0 0 40px #ff00ff;
+        }
+        50% {
+            text-shadow: 0 0 7px #fff, 0 0 10px #00ffff, 0 0 25px #00ffff, 0 0 50px #00ffff;
+        }
+    }
+    @keyframes borderDance {
+        0%   { border-color: #ff0000; box-shadow: 0 0 20px #ff000055; }
+        16%  { border-color: #ff7700; box-shadow: 0 0 20px #ff770055; }
+        33%  { border-color: #ffff00; box-shadow: 0 0 20px #ffff0055; }
+        50%  { border-color: #00cc00; box-shadow: 0 0 20px #00cc0055; }
+        66%  { border-color: #0000ff; box-shadow: 0 0 20px #0000ff55; }
+        83%  { border-color: #8b00ff; box-shadow: 0 0 20px #8b00ff55; }
+        100% { border-color: #ff0000; box-shadow: 0 0 20px #ff000055; }
+    }
+    @keyframes marqueeScroll {
+        0%   { transform: translateX(100vw); }
+        100% { transform: translateX(-100%); }
+    }
+
+    body {
+        font-family: 'Boogaloo', 'Comic Sans MS', cursive !important;
+        background: linear-gradient(135deg,
+            #ff9a9e 0%, #fad0c4 15%, #ffecd2 30%,
+            #a1c4fd 45%, #c2e9fb 60%, #d4fc79 75%,
+            #96e6a1 88%, #ff9a9e 100%) !important;
+        background-size: 400% 400% !important;
+        animation: bgShift 12s ease infinite !important;
+    }
+    .navbar.bg-primary {
+        background: linear-gradient(90deg,
+            #ff0080 0%, #ff8c00 25%, #40e0d0 50%, #8a2be2 75%, #ff0080 100%
+        ) !important;
+        background-size: 300% 100% !important;
+        animation: bgShift 3s linear infinite !important;
+        box-shadow: 0 4px 20px rgba(255,0,128,0.6) !important;
+        border-bottom: 4px solid #ffd700 !important;
+    }
+    .navbar-brand {
+        font-family: 'Permanent Marker', cursive !important;
+        font-size: 1.5rem !important;
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.5) !important;
+        animation: wobbleDance 3s ease-in-out infinite !important;
+        display: inline-block !important;
+    }
+    .nav-link {
+        font-family: 'Permanent Marker', cursive !important;
+        font-size: 1.1rem !important;
+        text-shadow: 1px 1px 3px rgba(0,0,0,0.4) !important;
+    }
+    h2 {
+        font-family: 'Pacifico', cursive !important;
+        animation: rainbowText 2s linear infinite, floatUp 4s ease-in-out infinite !important;
+        font-size: 2.2rem !important;
+        display: inline-block !important;
+    }
+    h3 {
+        font-family: 'Lobster Two', cursive !important;
+        color: #ff1493 !important;
+        text-shadow:
+            3px 3px 0px #ffd700,
+            5px 5px 0px #ff6347,
+            7px 7px 0px rgba(0,0,0,0.1) !important;
+        animation: wobbleDance 4s ease-in-out infinite !important;
+        display: inline-block !important;
+    }
+    .lead {
+        font-family: 'Creepster', cursive !important;
+        font-size: 1.5rem !important;
+        animation: rainbowText 3s linear infinite !important;
+    }
+    p:not(.lead) {
+        font-family: 'Boogaloo', cursive !important;
+        font-size: 1.15rem !important;
+        line-height: 1.7 !important;
+    }
+    .container {
+        background: rgba(255,255,255,0.78) !important;
+        border-radius: 25px !important;
+        padding: 28px !important;
+        margin-bottom: 20px !important;
+        border: 4px dashed #ff1493 !important;
+        animation: borderDance 2s linear infinite !important;
+    }
+    hr {
+        border: none !important;
+        height: 6px !important;
+        background: linear-gradient(90deg,
+            red, orange, yellow, green, blue, indigo, violet, red) !important;
+        background-size: 300% 100% !important;
+        animation: bgShift 2s linear infinite !important;
+        border-radius: 10px !important;
+        margin: 20px 0 !important;
+    }
+    #map {
+        border: 6px solid #ff00ff !important;
+        border-radius: 15px !important;
+        animation: borderDance 1.5s linear infinite !important;
+    }
+    .chat-toggle {
+        background: linear-gradient(135deg,
+            #ff0080, #ff8c00, #40e0d0, #8a2be2) !important;
+        background-size: 200% 200% !important;
+        animation: spinAround 3s linear infinite !important;
+        font-size: 28px !important;
+        width: 65px !important;
+        height: 65px !important;
+        box-shadow: 0 0 25px rgba(255,0,128,0.7),
+                    0 0 50px rgba(138,43,226,0.4) !important;
+    }
+    #chat-header {
+        background: linear-gradient(90deg,
+            #ff0080, #8a2be2, #00ced1, #ff0080) !important;
+        background-size: 300% 100% !important;
+        animation: bgShift 3s linear infinite !important;
+    }
+    #chat-header h3 {
+        font-family: 'Press Start 2P', monospace !important;
+        font-size: 0.6rem !important;
+        color: white !important;
+        animation: neonPulse 2s ease-in-out infinite !important;
+        transform: none !important;
+        display: inline !important;
+        text-shadow: none !important;
+    }
+    #send-message {
+        background: linear-gradient(135deg,
+            #ff6b6b, #ffd93d, #6bcb77) !important;
+        background-size: 200% 200% !important;
+        animation: wobbleDance 2s ease-in-out infinite !important;
+        font-family: 'Permanent Marker', cursive !important;
+        font-size: 0.95rem !important;
+    }
+    #chat-input {
+        font-family: 'Boogaloo', cursive !important;
+        font-size: 1rem !important;
+    }
+    ::-webkit-scrollbar { width: 12px; }
+    ::-webkit-scrollbar-track {
+        background: linear-gradient(180deg, #ff9a9e, #a18cd1);
+        border-radius: 6px;
+    }
+    ::-webkit-scrollbar-thumb {
+        background: linear-gradient(180deg, #ff0080, #8a2be2);
+        border-radius: 6px;
+        border: 2px solid white;
+    }
+    .floating-deco {
+        position: fixed;
+        font-size: 2rem;
+        pointer-events: none;
+        z-index: 500;
+        opacity: 0.6;
+        animation: floatUp 2s ease-in-out infinite;
+        user-select: none;
+    }
+    .marquee-bar {
+        overflow: hidden;
+        white-space: nowrap;
+        background: linear-gradient(90deg,
+            #ff0080, #ff8c00, #40e0d0, #8a2be2, #ff0080) !important;
+        background-size: 300% 100% !important;
+        animation: bgShift 4s linear infinite !important;
+        color: white;
+        padding: 8px 0;
+        font-family: 'Press Start 2P', monospace;
+        font-size: 0.62rem;
+        letter-spacing: 0.5px;
+        margin-bottom: 12px;
+    }
+    .marquee-inner {
+        display: inline-block;
+        animation: marqueeScroll 20s linear infinite;
+        padding-right: 50px;
+    }
+
     </style>
   </head>
-  <body class="bg-light">
+  <body>
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary mb-4">
       <div class="container-fluid">
         <a class="navbar-brand" href="#">Accueil</a>
@@ -225,15 +439,20 @@
       </div>
     </nav>
 
+    <!-- 🎡 BARRE DE DÉFILEMENT FOLLE 🎡 -->
+    <div class="marquee-bar">
+      <span class="marquee-inner">🏠 BIENVENUE dans l'app de prédiction immobilière 🏠 &nbsp;&nbsp;|&nbsp;&nbsp; 💰 CALCULEZ VOS PRIX AU M² 💰 &nbsp;&nbsp;|&nbsp;&nbsp; 🗺️ EXPLOREZ LA CARTE INTERACTIVE 🗺️ &nbsp;&nbsp;|&nbsp;&nbsp; 🤖 CHATBOT IA DISPONIBLE 🤖 &nbsp;&nbsp;|&nbsp;&nbsp; ✨ EXPLICATIONS SHAP ✨ &nbsp;&nbsp;|&nbsp;&nbsp; 🏚️ → 🏰 TRANSFORMEZ VOS DONNÉES EN OR 🏰 &nbsp;&nbsp;|&nbsp;&nbsp; 🎯 PRÉCISION MAXIMALE 🎯 &nbsp;&nbsp;|&nbsp;&nbsp; 🚀 POWERED BY ML 🚀</span>
+    </div>
+
     <!-- Ajouter une carte interactive de la France interogeant la base de données sql lite permettant de visualiser les prix au m2 par région, département, ville, quartier, avec des filtres sur les types de biens (appartement, maison). Utiliser une librairie comme Leaflet.js pour la carte et Chart.js pour les graphiques. -->
     <div class="container">
-      <h2 class="mb-4">Bienvenue sur l'application de prédiction immobilière</h2>
-      <p class="lead">Cette application vous permet d'estimer le prix de votre bien immobilier en fonction de ses caractéristiques. Vous pouvez également explorer les facteurs qui influencent le prix grâce à des explications SHAP.</p>
+      <h2 class="mb-4">🏠✨ Bienvenue sur l'application de prédiction immobilière ✨🏠</h2>
+      <p class="lead">🎯 Cette application vous permet d'estimer le prix de votre bien immobilier en fonction de ses caractéristiques. Vous pouvez également explorer les facteurs qui influencent le prix grâce à des explications SHAP. 📊🔥</p>
       <hr>
-      <h3>Comment ça marche ?</h3>
-      <p>Pour obtenir une estimation, rendez-vous sur la page de prédiction et remplissez le formulaire avec les caractéristiques de votre bien (surface, nombre de pièces, localisation, etc.). Une fois soumis, vous recevrez une estimation du prix ainsi que des explications sur les facteurs qui ont influencé cette estimation.</p>
-      <p>N'hésitez pas à explorer les différentes sections de l'application pour en savoir plus sur les données utilisées et les méthodes d'explication.</p>
-      <h3>Carte des prix immobiliers</h3>
+      <h3>🤔 Comment ça marche ? 🤔</h3>
+      <p>🖊️ Pour obtenir une estimation, rendez-vous sur la page de prédiction et remplissez le formulaire avec les caractéristiques de votre bien (surface, nombre de pièces, localisation, etc.). Une fois soumis, vous recevrez une estimation du prix ainsi que des explications sur les facteurs qui ont influencé cette estimation. 💡</p>
+      <p>🌈 N'hésitez pas à explorer les différentes sections de l'application pour en savoir plus sur les données utilisées et les méthodes d'explication. 🎉</p>
+      <h3>🗺️ Carte des prix immobiliers 🗺️</h3>
 
     <div id="map"></div>
     </div>
@@ -532,8 +751,18 @@
 
     </script>
     <div class="container">
-        <p>N'hésitez pas à explorer la carte pour visualiser les prix au m2 par région, département, ville et quartier.</p>
+        <p>🌍 N'hésitez pas à explorer la carte pour visualiser les prix au m2 par région, département, ville et quartier. 🏡</p>
     </div>
+
+    <!-- 🎈 Emoji-décorations flottantes 🎈 -->
+    <div class="floating-deco" style="left:0.5%;top:30%;animation-delay:0s;animation-duration:2.5s;">🏠</div>
+    <div class="floating-deco" style="left:1.5%;top:62%;animation-delay:0.6s;animation-duration:3s;">💰</div>
+    <div class="floating-deco" style="left:95%;top:25%;animation-delay:1.1s;animation-duration:2s;">🎯</div>
+    <div class="floating-deco" style="left:93%;top:58%;animation-delay:0.3s;animation-duration:3.5s;">✨</div>
+    <div class="floating-deco" style="left:48%;top:90%;animation-delay:1.7s;animation-duration:2.8s;">🤑</div>
+    <div class="floating-deco" style="left:7%;top:80%;animation-delay:0.9s;animation-duration:2.2s;">📊</div>
+    <div class="floating-deco" style="left:88%;top:78%;animation-delay:1.4s;animation-duration:3.2s;">🗺️</div>
+    <div class="floating-deco" style="left:50%;top:8%;animation-delay:0.5s;animation-duration:2s;">🚀</div>
     </body>
 
     
