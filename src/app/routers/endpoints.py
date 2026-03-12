@@ -468,3 +468,133 @@ async def predict_protected(payload: Dict[str, Any], auth: bool = Depends(verify
         # on utilise le fallback
         fallback = perform_prediction(payload)
         return {"warning": "pipeline prediction failed, returning fallback", "error": str(e), "result": fallback}
+
+
+@router.get("/map-data", tags=["Map"], summary="Récupère les données de prix pour la carte interactive")
+async def get_map_data(
+    south: float = Query(..., description="Latitude sud de la bounding box"),
+    west: float = Query(..., description="Longitude ouest de la bounding box"),
+    north: float = Query(..., description="Latitude nord de la bounding box"),
+    east: float = Query(..., description="Longitude est de la bounding box"),
+    zoom: int = Query(..., description="Niveau de zoom (6-18)")
+):
+    """
+    Récupère les données de transactions immobilières agrégées selon le niveau de zoom.
+    - zoom 6-8: Agrégation par département (code_commune[:2])
+    - zoom 9-11: Agrégation par commune (code_commune)
+    - zoom 12+: Points individuels avec clustering
+    """
+    import sqlite3
+    import os
+    from pathlib import Path
+    
+    # Chemin vers la base de données (depuis la racine du projet)
+    base_dir = Path(__file__).parent.parent.parent.parent
+    db_path = base_dir / "src" / "agentia" / "bdd" / "donnees_immo.db"
+    
+    if not db_path.exists():
+        raise HTTPException(status_code=500, detail=f"Base de données introuvable: {db_path}")
+    
+    try:
+        connection = sqlite3.connect(db_path)
+        cursor = connection.cursor()
+        
+        # Déterminer le niveau d'agrégation selon le zoom
+        if zoom <= 7:
+            # Agrégation par département
+            query = """
+                SELECT 
+                    SUBSTR(CAST(code_commune AS TEXT), 1, 2) as zone_code,
+                    AVG(valeur_fonciere / NULLIF(surface_reelle_bati, 0)) as prix_m2,
+                    COUNT(*) as nb_transactions,
+                    AVG(valeur_fonciere) as prix_moyen
+                FROM Transactions
+                WHERE latitude BETWEEN ? AND ?
+                    AND longitude BETWEEN ? AND ?
+                    AND latitude IS NOT NULL
+                    AND longitude IS NOT NULL
+                    AND valeur_fonciere > 0
+                    AND surface_reelle_bati > 0
+                GROUP BY SUBSTR(CAST(code_commune AS TEXT), 1, 2)
+                HAVING nb_transactions >= 5
+            """
+            level = "departement"
+        elif zoom <= 10:
+            # Agrégation par département
+            query = """
+                SELECT 
+                    SUBSTR(CAST(code_commune AS TEXT), 1, 2) as zone_code,
+                    AVG(valeur_fonciere / NULLIF(surface_reelle_bati, 0)) as prix_m2,
+                    COUNT(*) as nb_transactions,
+                    AVG(valeur_fonciere) as prix_moyen
+                FROM Transactions
+                WHERE latitude BETWEEN ? AND ?
+                    AND longitude BETWEEN ? AND ?
+                    AND latitude IS NOT NULL
+                    AND longitude IS NOT NULL
+                    AND valeur_fonciere > 0
+                    AND surface_reelle_bati > 0
+                GROUP BY SUBSTR(CAST(code_commune AS TEXT), 1, 2)
+                HAVING nb_transactions >= 5
+            """
+            level = "departement"
+        else:
+            # Agrégation par commune
+            query = """
+                SELECT 
+                    CAST(code_commune AS TEXT) as zone_code,
+                    AVG(valeur_fonciere / NULLIF(surface_reelle_bati, 0)) as prix_m2,
+                    COUNT(*) as nb_transactions,
+                    AVG(valeur_fonciere) as prix_moyen
+                FROM Transactions
+                WHERE latitude BETWEEN ? AND ?
+                    AND longitude BETWEEN ? AND ?
+                    AND latitude IS NOT NULL
+                    AND longitude IS NOT NULL
+                    AND valeur_fonciere > 0
+                    AND surface_reelle_bati > 0
+                GROUP BY CAST(code_commune AS TEXT)
+                HAVING nb_transactions >= 3
+            """
+            level = "commune"
+        
+        # Exécuter la requête
+        cursor.execute(query, (south, north, west, east))
+        results = cursor.fetchall()
+        
+        # Transformer en format JSON
+        data_points = []
+        for row in results:
+            zone_code, prix_m2, nb_trans, prix_moyen = row
+            if prix_m2 is not None:
+                data_points.append({
+                    "zone_code": zone_code,
+                    "prix_m2": round(prix_m2, 2),
+                    "nb_transactions": nb_trans,
+                    "prix_moyen": round(prix_moyen, 2)
+                })
+        
+        connection.close()
+        
+        # Calculer les statistiques pour la légende
+        if data_points:
+            prix_list = [p["prix_m2"] for p in data_points]
+            stats = {
+                "min": round(min(prix_list), 2),
+                "max": round(max(prix_list), 2),
+                "mean": round(sum(prix_list) / len(prix_list), 2),
+                "count": len(data_points)
+            }
+        else:
+            stats = {"min": 0, "max": 0, "mean": 0, "count": 0}
+        
+        return {
+            "data": data_points,
+            "stats": stats,
+            "zoom_level": zoom,
+            "level": level
+        }
+        
+    except Exception as e:
+        logger.error(f"Erreur lors de la récupération des données de carte: {e}")
+        raise HTTPException(status_code=500, detail=f"Erreur base de données: {str(e)}")

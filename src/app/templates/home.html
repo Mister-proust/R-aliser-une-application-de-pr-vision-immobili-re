@@ -1,0 +1,716 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>App de prédiction immobilière - Prototype</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <!-- Leaflet -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- Axios pour appeler l'API -->
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    
+    <style>
+      .chat-widget {
+          position: fixed;
+          bottom: 20px;
+          right: 20px;
+          z-index: 1000;
+      }
+      .chat-toggle {
+          width: 50px;
+          height: 50px;
+          border-radius: 50%;
+          background: #0d6efd; 
+          border: none;
+          color: white;
+          font-size: 24px;
+          cursor: pointer;
+          box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      }
+      .chat-container {
+        position: fixed;
+        bottom: 80px;
+        right: 20px;
+        height: calc(100vh - 150px);
+        max-height: 900px;
+        width: 55vw;
+        min-width: 350px;
+        max-width: 800px;
+        background: white;
+        border-radius: 10px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        display: flex;
+        flex-direction: column;
+    }
+
+    @media (max-width: 768px) {
+        .chat-container {
+            width: calc(100vw - 40px);
+            height: calc(100vh - 100px);
+            max-width: none;
+        }
+    }
+
+      .chat-container.hidden {
+          display: none;
+      }
+      #chat-header {
+          padding: 15px;
+          background: #0d6efd;
+          color: white;
+          border-radius: 10px 10px 0 0;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+      }
+      #chat-header h3 {
+          margin: 0;
+          font-size: 1.1rem;
+      }
+      #chat-messages {
+          flex-grow: 1;
+          overflow-y: auto;
+          padding: 15px;
+          font-size: 0.9rem;
+      }
+      #chat-input-area {
+          padding: 10px;
+          border-top: 1px solid #eee;
+          display: flex;
+          gap: 8px;
+      }
+      #chat-input {
+          flex-grow: 1;
+          padding: 8px 12px;
+          border: 1px solid #ddd;
+          border-radius: 20px;
+          outline: none;
+      }
+      #chat-input:focus {
+          border-color: #0d6efd;
+      }
+      #send-message {
+          background: #0d6efd;
+          color: white;
+          border: none;
+          padding: 0 15px;
+          border-radius: 20px;
+          cursor: pointer;
+      }
+      
+      .message {
+          margin: 8px 0;
+          padding: 10px 14px;
+          border-radius: 15px;
+          width: fit-content;
+          max-width: 90%;
+          word-wrap: break-word;
+      }
+      .user-message {
+          background: #e9ecef;
+          margin-left: auto;
+          border-bottom-right-radius: 2px;
+      }
+      .bot-message {
+          background: #f8f9fa;
+          margin-right: auto;
+          border-bottom-left-radius: 2px;
+          border: 1px solid #eee;
+      }
+      .bot-message p:last-child {
+          margin-bottom: 0;
+      }
+
+      .bot-message pre {
+          background: #2d2d2d;
+          color: #f8f8f2;
+          padding: 8px;
+          border-radius: 5px;
+          overflow-x: auto;
+          font-family: monospace;
+          font-size: 0.8rem;
+          margin-top: 8px;
+      }
+      .bot-message code {
+          background: #e9ecef;
+          padding: 2px 4px;
+          border-radius: 4px;
+          font-family: monospace;
+          font-size: 0.85rem;
+          color: #d63384;
+      }
+      .bot-message pre code {
+          background: transparent;
+          color: inherit;
+          padding: 0;
+      }
+      .bot-message ul, .bot-message ol {
+          padding-left: 20px;
+          margin-bottom: 8px;
+      }
+      .bot-message blockquote {
+          border-left: 3px solid #0d6efd;
+          padding-left: 10px;
+          color: #6c757d;
+          margin-left: 0;
+      }
+
+      .typing-indicator {
+          display: flex;
+          gap: 4px;
+          padding: 4px 8px;
+          align-items: center;
+          height: 24px;
+      }
+      .typing-indicator span {
+          width: 6px;
+          height: 6px;
+          background-color: #888;
+          border-radius: 50%;
+          animation: bounce 1.4s infinite ease-in-out both;
+      }
+      .typing-indicator span:nth-child(1) { animation-delay: -0.32s; }
+      .typing-indicator span:nth-child(2) { animation-delay: -0.16s; }
+      @keyframes bounce {
+          0%, 80%, 100% { transform: scale(0); }
+          40% { transform: scale(1); }
+      }
+   
+    #map {
+        height: 500px;
+        width: 100%;
+        margin-top: 20px;
+    }
+
+    .map-legend {
+        background: white;
+        padding: 10px;
+        border-radius: 5px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        line-height: 24px;
+        font-size: 12px;
+    }
+    .map-legend i {
+        width: 18px;
+        height: 18px;
+        float: left;
+        margin-right: 8px;
+        opacity: 0.7;
+    }
+    .map-legend .legend-title {
+        font-weight: bold;
+        margin-bottom: 5px;
+    }
+
+    </style>
+  </head>
+  <body class="bg-light">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary mb-4">
+      <div class="container-fluid">
+        <a class="navbar-brand" href="#">Accueil</a>
+        <div class="collapse navbar-collapse">
+          <ul class="navbar-nav ms-auto">
+            <li class="nav-item"><a class="nav-link active" href="/">Accueil</a></li>
+            <li class="nav-item"><a class="nav-link" href="/prediction">Prédiction</a></li>
+            <li class="nav-item"><a class="nav-link" href="/shap">SHAP</a></li>
+          </ul>
+        </div>
+      </div>
+    </nav>
+
+    <!-- Ajouter une carte interactive de la France interogeant la base de données sql lite permettant de visualiser les prix au m2 par région, département, ville, quartier, avec des filtres sur les types de biens (appartement, maison). Utiliser une librairie comme Leaflet.js pour la carte et Chart.js pour les graphiques. -->
+    <div class="container">
+      <h2 class="mb-4">Bienvenue sur l'application de prédiction immobilière</h2>
+      <p class="lead">Cette application vous permet d'estimer le prix de votre bien immobilier en fonction de ses caractéristiques. Vous pouvez également explorer les facteurs qui influencent le prix grâce à des explications SHAP.</p>
+      <hr>
+      <h3>Comment ça marche ?</h3>
+      <p>Pour obtenir une estimation, rendez-vous sur la page de prédiction et remplissez le formulaire avec les caractéristiques de votre bien (surface, nombre de pièces, localisation, etc.). Une fois soumis, vous recevrez une estimation du prix ainsi que des explications sur les facteurs qui ont influencé cette estimation.</p>
+      <p>N'hésitez pas à explorer les différentes sections de l'application pour en savoir plus sur les données utilisées et les méthodes d'explication.</p>
+      <h3>Carte des prix immobiliers</h3>
+
+    <div id="map"></div>
+    </div>
+
+    <script>
+
+    // Initialisation de la carte
+    var map = L.map('map').setView([46.6, 2.4], 6);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap'
+    }).addTo(map);
+
+    // Variables globales pour gérer les layers
+    var geoJsonLayer = null;
+    var currentLegend = null;
+    var priceData = {};
+    var statsData = {};
+
+    // Fonction pour obtenir la couleur selon le prix au m2
+    function getColor(prixM2) {
+        if (!statsData.min || !statsData.max) {
+            console.warn('Stats manquantes pour getColor!', statsData);
+            return '#cccccc';
+        }
+        
+        var min = statsData.min;
+        var max = statsData.max;
+        var normalized = (prixM2 - min) / (max - min);
+        
+        // Gradient de couleur : vert (bas prix) -> jaune -> orange -> rouge (prix élevé)
+        if (normalized < 0.2) {
+            return '#2ecc71'; // Vert
+        } else if (normalized < 0.4) {
+            return '#f1c40f'; // Jaune
+        } else if (normalized < 0.6) {
+            return '#e67e22'; // Orange
+        } else if (normalized < 0.8) {
+            return '#e74c3c'; // Orange-rouge
+        } else {
+            return '#c0392b'; // Rouge foncé
+        }
+    }
+
+    // Style pour les polygones
+    function style(feature) {
+        var code = feature.properties.code;
+        
+        // Formater le code pour correspondre à notre base (garder les zéros initiaux)
+        if (code && code.length < 2) {
+            code = '0' + code; // Ajouter un zéro devant si nécessaire
+        }
+        
+        var prix = priceData[code] ? priceData[code].prix_m2 : null;
+        
+        var fillColor = prix ? getColor(prix) : '#cccccc';
+        
+        return {
+            fillColor: fillColor,
+            weight: 1,
+            opacity: 1,
+            color: 'white',
+            fillOpacity: prix ? 0.7 : 0.3
+        };
+    }
+
+    // Fonction pour créer une légende
+    function createLegend(stats) {
+        // Supprimer l'ancienne légende si elle existe
+        if (currentLegend) {
+            map.removeControl(currentLegend);
+        }
+
+        // Créer une nouvelle légende
+        var legend = L.control({position: 'bottomright'});
+
+        legend.onAdd = function (map) {
+            var div = L.DomUtil.create('div', 'map-legend');
+            div.innerHTML = '<div class="legend-title">Prix au m²</div>';
+            
+            var ranges = [
+                {label: '< ' + Math.round(stats.min + (stats.max - stats.min) * 0.2) + ' €', color: '#2ecc71'},
+                {label: Math.round(stats.min + (stats.max - stats.min) * 0.2) + ' - ' + Math.round(stats.min + (stats.max - stats.min) * 0.4) + ' €', color: '#f1c40f'},
+                {label: Math.round(stats.min + (stats.max - stats.min) * 0.4) + ' - ' + Math.round(stats.min + (stats.max - stats.min) * 0.6) + ' €', color: '#e67e22'},
+                {label: Math.round(stats.min + (stats.max - stats.min) * 0.6) + ' - ' + Math.round(stats.min + (stats.max - stats.min) * 0.8) + ' €', color: '#e74c3c'},
+                {label: '> ' + Math.round(stats.min + (stats.max - stats.min) * 0.8) + ' €', color: '#c0392b'}
+            ];
+
+            for (var i = 0; i < ranges.length; i++) {
+                div.innerHTML += '<i style="background:' + ranges[i].color + '"></i> ' + ranges[i].label + '<br>';
+            }
+            
+            div.innerHTML += '<div style="margin-top:5px; font-style:italic;">' + stats.count + ' zones avec données</div>';
+            div.innerHTML += '<div style="font-style:italic;">Prix moyen: ' + stats.mean + ' €/m²</div>';
+
+            return div;
+        };
+
+        legend.addTo(map);
+        currentLegend = legend;
+    }
+
+    // Fonction pour ajouter les interactions
+    function onEachFeature(feature, layer) {
+        var code = feature.properties.code;
+        var nom = feature.properties.nom || code;
+        
+        // Formater le code pour correspondre à notre base
+        if (code && code.length < 2) {
+            code = '0' + code;
+        }
+        
+        var data = priceData[code];
+        
+        // Highlighting au survol
+        layer.on({
+            mouseover: function(e) {
+                var layer = e.target;
+                if (data) {
+                    layer.setStyle({
+                        weight: 3,
+                        color: '#666',
+                        fillOpacity: 0.9
+                    });
+                    if (!L.Browser.ie && !L.Browser.opera && !L.Browser.edge) {
+                        layer.bringToFront();
+                    }
+                }
+            },
+            mouseout: function(e) {
+                if (geoJsonLayer) {
+                    geoJsonLayer.resetStyle(e.target);
+                }
+            }
+        });
+        
+        // Popup avec les informations
+        if (data) {
+            var popupContent = '<b>' + nom + '</b><br>' +
+                             'Code: ' + code + '<br>' +
+                             'Prix/m²: ' + data.prix_m2 + ' €<br>' +
+                             'Prix moyen: ' + data.prix_moyen + ' €<br>' +
+                             'Transactions: ' + data.nb_transactions;
+            layer.bindPopup(popupContent);
+        } else {
+            layer.bindPopup('<b>' + nom + '</b><br>Aucune donnée disponible');
+        }
+    }
+
+    // Fonction pour charger les données de la carte
+    async function loadMapData() {
+        var zoom = map.getZoom();
+        var bounds = map.getBounds();
+
+        // Construire l'URL de l'API backend
+        var url = '/map-data?south=' + bounds.getSouth() + 
+                  '&west=' + bounds.getWest() + 
+                  '&north=' + bounds.getNorth() + 
+                  '&east=' + bounds.getEast() + 
+                  '&zoom=' + zoom;
+
+        try {
+            // Récupérer les données de prix
+            const response = await axios.get(url);
+            const result = response.data;
+
+            // Si pas de données, ne rien faire
+            if (result.data.length === 0) {
+                console.log('Aucune donnée disponible pour cette zone');
+                return;
+            }
+
+            // Stocker les données de prix dans un objet
+            priceData = {};
+            result.data.forEach(function(item) {
+                // S'assurer que les codes départements ont toujours 2 chiffres avec zéro initial si nécessaire
+                var code = item.zone_code;
+                if (result.level === 'departement' && code && code.length < 2) {
+                    code = '0' + code;
+                }
+                priceData[code] = item;
+            });
+
+            console.log('Prix chargés:', Object.keys(priceData).length, 'codes:', Object.keys(priceData));
+
+            // Stocker les stats
+            statsData = result.stats;
+            
+            console.log('Stats:', JSON.stringify(statsData));
+
+            // Créer la légende
+            createLegend(result.stats);
+
+            // Charger le GeoJSON selon le niveau
+            let geoJson;
+            if (result.level === 'departement') {
+                // Fichier statique france-geojson (l'endpoint /departements de geo.api.gouv.fr ne retourne pas de géométrie)
+                console.log('Chargement des départements depuis france-geojson');
+                const geoResponse = await axios.get('https://raw.githubusercontent.com/gregoiredavid/france-geojson/master/departements.geojson');
+                geoJson = geoResponse.data;
+            } else if (result.level === 'commune') {
+                // L'endpoint /communes ne supporte pas le filtrage multi-codes.
+                // On récupère toutes les communes des départements visibles via codeDepartement=
+                var communeCodes = Object.keys(priceData);
+                var deptSet = {};
+                communeCodes.forEach(function(c) { deptSet[c.substring(0, 2)] = true; });
+                var deptList = Object.keys(deptSet);
+                console.log('Chargement des communes pour les départements:', deptList);
+                var deptPromises = deptList.map(function(dept) {
+                    return axios.get('https://geo.api.gouv.fr/communes?codeDepartement=' + dept + '&fields=nom,code,contour');
+                });
+                var deptResponses = await Promise.all(deptPromises);
+                var allCommunes = [];
+                deptResponses.forEach(function(r) {
+                    if (Array.isArray(r.data)) allCommunes = allCommunes.concat(r.data);
+                });
+                console.log('Communes chargées:', allCommunes.length);
+                geoJson = {
+                    type: "FeatureCollection",
+                    features: allCommunes.map(function(item) {
+                        return {
+                            type: "Feature",
+                            properties: { code: item.code, nom: item.nom },
+                            geometry: item.contour
+                        };
+                    })
+                };
+            }
+            
+            if (!geoJson || !geoJson.features || geoJson.features.length === 0) {
+                console.error('Aucune géométrie reçue de l\'API geo.gouv.fr');
+                return;
+            }
+
+            console.log('GeoJSON chargé:', geoJson.features.length, 'features');
+            if (geoJson.features.length > 0) {
+                var exampleFeature = geoJson.features[0];
+                var exampleCode = exampleFeature.properties.code;
+                console.log('Exemple feature:', exampleFeature.properties.nom, 'Code:', exampleCode, 'Type:', typeof exampleCode);
+                console.log('Exemple de code dans priceData:', Object.keys(priceData)[0], 'Type:', typeof Object.keys(priceData)[0]);
+                
+                // Test de matching
+                var matchCount = 0;
+                geoJson.features.forEach(function(f) {
+                    var code = f.properties.code;
+                    if (code && code.length < 2) code = '0' + code;
+                    if (priceData[code]) {
+                        matchCount++;
+                        console.log('Match trouvé:', f.properties.nom, 'code:', code);
+                    }
+                });
+                console.log('*** Nombre de matchs:', matchCount, '/', geoJson.features.length, '***');
+            }
+
+            // Supprimer l'ancien layer
+            if (geoJsonLayer) {
+                map.removeLayer(geoJsonLayer);
+            }
+
+            // Ajouter le nouveau layer
+            geoJsonLayer = L.geoJSON(geoJson, {
+                style: style,
+                onEachFeature: onEachFeature
+            }).addTo(map);
+
+            console.log('Chargement de ' + result.data.length + ' zones (niveau: ' + result.level + ', zoom: ' + zoom + ')');
+
+        } catch (error) {
+            console.error('Erreur lors du chargement des données:', error);
+        }
+    }
+
+    // Charger les données au démarrage
+    loadMapData();
+
+    // Recharger les données uniquement quand le zoom change significativement
+    var lastZoom = map.getZoom();
+    map.on('zoomend', function() {
+        var currentZoom = map.getZoom();
+        // Recharger si on change de niveau (7-10-11+)
+        if ((lastZoom <= 7 && currentZoom > 7) || 
+            (lastZoom <= 10 && currentZoom > 10) ||
+            (lastZoom > 7 && currentZoom <= 7) ||
+            (lastZoom > 10 && currentZoom <= 10)) {
+            loadMapData();
+            lastZoom = currentZoom;
+        }
+    });
+
+    // Recharger quand on se déplace
+    map.on('moveend', function() {
+        if (Math.abs(map.getZoom() - lastZoom) < 1) {
+            loadMapData();
+        }
+    });
+
+    </script>
+    <div class="container">
+        <p>N'hésitez pas à explorer la carte pour visualiser les prix au m2 par région, département, ville et quartier.</p>
+    </div>
+    </body>
+
+    
+    <div id="chat-widget" class="chat-widget">
+        <button id="chat-toggle" class="chat-toggle">💬</button>
+        <div id="chat-container" class="chat-container hidden">
+            <div id="chat-header">
+                <h3>Assistant DVF</h3>
+                <button id="close-chat" class="btn-close btn-close-white" aria-label="Close"></button>
+            </div>
+            <div id="chat-messages"></div>
+            <div id="chat-input-area">
+                <input type="text" id="chat-input" placeholder="Posez votre question...">
+                <button id="send-message">Envoyer</button>
+            </div>
+        </div>
+    </div>
+
+    </script>
+
+       <script type="module">
+        import { Client } from "https://cdn.jsdelivr.net/npm/@gradio/client/dist/index.min.js";
+        
+        async function initChatWidget() {
+            const gradioAppUrl = "http://127.0.0.1:7860/"; 
+            
+            let client;
+            try {
+                client = await Client.connect(gradioAppUrl);
+            } catch (err) {
+            }
+            
+            const chatToggle = document.getElementById('chat-toggle');
+            const chatContainer = document.getElementById('chat-container');
+            const closeChat = document.getElementById('close-chat');
+            const chatInput = document.getElementById('chat-input');
+            const sendButton = document.getElementById('send-message');
+            const messagesContainer = document.getElementById('chat-messages');
+        
+            chatToggle.addEventListener('click', () => {
+                chatContainer.classList.remove('hidden');
+            });
+        
+            closeChat.addEventListener('click', () => {
+                chatContainer.classList.add('hidden');
+            });
+
+            let chatHistory = [];
+            let isBusy = false;
+            const typingHtml = '<div class="typing-indicator"><span></span><span></span><span></span></div>';
+
+            function extractText(val) {
+                if (val === null || val === undefined) return "";
+                if (typeof val === 'string') return val;
+                if (Array.isArray(val)) return val.map(v => extractText(v)).join("\n");
+                if (typeof val === 'object') {
+                    if (val.text !== undefined) return extractText(val.text);
+                    if (val.value !== undefined) return extractText(val.value);
+                    if (val.content !== undefined) return extractText(val.content);
+                    if (val.name !== undefined) return extractText(val.name);
+                    try { return "```json\n" + JSON.stringify(val, null, 2) + "\n```"; } 
+                    catch(e) { return "Structure complexe"; }
+                }
+                return String(val);
+            }
+
+            function appendBubble(contentStr, sender, isRawHtml = false, id = null) {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = `message ${sender}-message`;
+                if (id) messageDiv.id = id;
+                
+                if (isRawHtml) {
+                    messageDiv.innerHTML = contentStr;
+                } else if (sender === 'bot') {
+                    messageDiv.innerHTML = marked.parse(contentStr);
+                } else {
+                    messageDiv.textContent = contentStr;
+                }
+                messagesContainer.appendChild(messageDiv);
+                messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            }
+        
+            async function sendMessage() {
+                const userMessage = chatInput.value.trim();
+                if (!userMessage || isBusy) return;
+
+                appendBubble(userMessage, 'user');
+                chatInput.value = '';
+
+                if (!client) {
+                    return;
+                }
+
+                isBusy = true;
+                sendButton.disabled = true; 
+                
+                appendBubble(typingHtml, 'bot', true);
+
+                try {
+                    const stream = client.submit("/chat", [userMessage, chatHistory]);
+                    
+                    let timeoutId = null;
+
+                    const unlockInterface = () => {
+                        isBusy = false;
+                        sendButton.disabled = false;
+                        if(timeoutId) clearTimeout(timeoutId);
+                        
+                        const allBubbles = messagesContainer.querySelectorAll('.bot-message');
+                        allBubbles.forEach(b => {
+                            if(b.innerHTML === typingHtml || b.innerHTML.trim() === "") b.remove();
+                        });
+                    };
+
+                    for await (const event of stream) {
+                        if (timeoutId) clearTimeout(timeoutId);
+                        timeoutId = setTimeout(unlockInterface, 2500);
+
+                        if (event.type === "data" || event.type === "update") {
+                            const updatedHistory = event.data[0];
+                            if (updatedHistory && Array.isArray(updatedHistory)) {
+                                chatHistory = updatedHistory;
+                                messagesContainer.innerHTML = '';
+                                
+                                chatHistory.forEach((msg) => {
+                                    if (Array.isArray(msg)) {
+                                        if (msg[0] !== null && msg[0] !== undefined) {
+                                            appendBubble(extractText(msg[0]), 'user');
+                                        }
+                                        if (msg[1] !== null && msg[1] !== undefined) {
+                                            const bTxt = extractText(msg[1]);
+                                            if (bTxt.trim() === "") {
+                                                appendBubble(typingHtml, 'bot', true);
+                                            } else {
+                                                appendBubble(bTxt, 'bot');
+                                            }
+                                        } else {
+                                            appendBubble(typingHtml, 'bot', true);
+                                        }
+                                    } else if (msg && typeof msg === 'object') {
+                                        const sender = msg.role === 'user' ? 'user' : 'bot';
+                                        let text = extractText(msg.content || msg.text || msg);
+                                        
+                                        if (sender === 'bot' && text.trim() === "") {
+                                            appendBubble(typingHtml, 'bot', true);
+                                        } else {
+                                            appendBubble(text, sender);
+                                        }
+                                    }
+                                });
+                                
+                                if (isBusy) {
+                                    const lastChild = messagesContainer.lastElementChild;
+                                    if (!lastChild || lastChild.innerHTML !== typingHtml) {
+                                        appendBubble(typingHtml, 'bot', true);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    
+                    unlockInterface();
+
+                } catch (error) {
+                    isBusy = false;
+                    sendButton.disabled = false;
+                }
+            }
+        
+            sendButton.addEventListener('click', sendMessage);
+            chatInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') sendMessage();
+            });
+        }
+        
+        initChatWidget();
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</html>
+

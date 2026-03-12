@@ -35,8 +35,11 @@ Instrumentator().instrument(app).expose(app, endpoint="/metrics")
 
 templates = Jinja2Templates(directory="src/app/templates")
 
-
 @app.get("/", response_class=HTMLResponse)
+async def home(request: Request):
+    return templates.TemplateResponse(request, "home.html")
+
+@app.get("/prediction", response_class=HTMLResponse)
 async def index(request: Request):
     return templates.TemplateResponse(request, "index.html")
 
