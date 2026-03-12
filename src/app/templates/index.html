@@ -400,9 +400,15 @@
                 chatContainer.classList.add('hidden');
             });
 
-            let chatHistory = [];
+            const welcomeMessage = {
+                role: 'assistant',
+                content: [{type: "text", text: "Bonjour ! Je suis l'Assistant DVF. Je peux vous aider à estimer un bien immobilier, rechercher des transactions historiques ou localiser des adresses.\n\nComment puis-je vous aider ?"}]
+            };
+            let chatHistory = [welcomeMessage];
             let isBusy = false;
             const typingHtml = '<div class="typing-indicator"><span></span><span></span><span></span></div>';
+
+            appendBubble(extractText(welcomeMessage.content), 'bot');
 
             function extractText(val) {
                 if (val === null || val === undefined) return "";

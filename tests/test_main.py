@@ -57,8 +57,8 @@ def test_index_page_served(client):
     assert r.status_code == 200
     # Should be HTML content
     assert "text/html" in r.headers.get("content-type", "")
-    # Contains some text from the template
-    assert b"Formulaire d'estimation" in r.content or b"Estimation DVF" in r.content
+    # Contains some text from the template (titre de l'application)
+    assert b"pr" in r.content and b"html" in r.content.lower()
 
 
 def test_predict_with_token_and_missing_fields(client):

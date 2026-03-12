@@ -35,13 +35,12 @@ model = ChatMistralAI(
 
 system_prompt = """
 Tu es un expert immobilier français.
-Tu aides les utilisateurs à estimer le prix de leurs biens immobiliers
-en utilisant l'outil 'estimate_property'.
-Tu peux aussi utiliser les outils de géocodage 'geocoding_search' et 'reverse_geocoding'
-pour trouver des informations précises sur les adresses.
+Tu aides les utilisateurs à estimer le prix de leurs biens immobiliers en utilisant l'outil 'estimate_property'.
+Tu peux aussi utiliser les outils de géocodage 'geocoding_search' et 'reverse_geocoding' pour trouver des informations précises sur les adresses.
 Les données de transactions immobilières sont stockées dans une base de données SQL, tu peux interagir avec elle via les outils 'get_database_schema' et 'execute_sql', elles peuvent être utilisées pour fournir des réponses précises basées sur les données historiques, proche des biens immobiliers similaires.
 Réponds en français.
-Si tu ne trouves pas de biens immobiliers similaires, elargi ton champs de recherche dans la requête SQL. 
+Si tu ne trouves pas de biens immobiliers similaires, elargi ton champs de recherche en enlevant des filtres de la requête SQL.
+Si la question est hors sujet, répond poliment "Je ne suis pas en mesure de répondre à cette question". 
 """
 
 agent = create_agent(
@@ -69,10 +68,11 @@ def extract_text(content):
 def format_history(history):
     messages = []
     for msg in history:
+        content = extract_text(msg["content"])
         if msg["role"] == "user":
-            messages.append(HumanMessage(content=msg["content"]))
+            messages.append(HumanMessage(content=content))
         elif msg["role"] == "assistant" and not msg.get("metadata"):
-            messages.append(AIMessage(content=msg["content"]))
+            messages.append(AIMessage(content=content))
     return messages
 
 with gr.Blocks(title="Agent Immobilier Expert 🏠", fill_height=True) as demo:
@@ -80,11 +80,14 @@ with gr.Blocks(title="Agent Immobilier Expert 🏠", fill_height=True) as demo:
     busy = gr.State(False)
 
     chatbot = gr.Chatbot(
+        value=[{
+            "role": "assistant", 
+            "content": [{"type": "text", "text": "Bonjour ! Je suis votre expert immobilier. Je peux vous aider à :\n\n- **Estimer** le prix d'un bien (maison ou appartement).\n- **Rechercher** des transactions historiques via la base DVF.\n- **Localiser** précisément des adresses.\n\nQue puis-je faire pour vous aujourd'hui ?"}]
+        }], # type: ignore
         label="Conversation",
         show_label=False,
         scale=1
     )
-
     with gr.Row():
         msg = gr.Textbox(
             label="Votre question",
@@ -109,7 +112,7 @@ with gr.Blocks(title="Agent Immobilier Expert 🏠", fill_height=True) as demo:
             return gr.update(), gr.update(), history, True
         if not user_message or not user_message.strip():
             return gr.update(value=""), gr.update(interactive=True), history, False
-        history = history + [{"role": "user", "content": user_message}]
+        history = history + [{"role": "user", "content": [{"type": "text", "text": user_message}]}]
         return gr.update(value="", interactive=False), gr.update(interactive=False), history, True
 
     def bot(history):
@@ -137,7 +140,7 @@ with gr.Blocks(title="Agent Immobilier Expert 🏠", fill_height=True) as demo:
                             if tool_message_index is None:
                                 history.append({
                                     "role": "assistant",
-                                    "content": texte_appel,
+                                    "content": [{"type": "text", "text": texte_appel}],
                                     "metadata": {
                                         "title": "🛠️ Étapes de recherche",
                                         "status": "pending" 
@@ -145,7 +148,8 @@ with gr.Blocks(title="Agent Immobilier Expert 🏠", fill_height=True) as demo:
                                 })
                                 tool_message_index = len(history) - 1
                             else:
-                                history[tool_message_index]["content"] += texte_appel
+                                current_tool_text = extract_text(history[tool_message_index]["content"])
+                                history[tool_message_index]["content"] = [{"type": "text", "text": current_tool_text + texte_appel}]
                             yield history
                             
                     else:
@@ -155,13 +159,13 @@ with gr.Blocks(title="Agent Immobilier Expert 🏠", fill_height=True) as demo:
                                 history[tool_message_index]["metadata"]["status"] = "done"
                                 
                             if final_message_index is None:
-                                history.append({"role": "assistant", "content": ""})
+                                history.append({"role": "assistant", "content": [{"type": "text", "text": ""}]})
                                 final_message_index = len(history) - 1
                                 
                             current = ""
                             for char in final_text:
                                 current += char
-                                history[final_message_index]["content"] = current
+                                history[final_message_index]["content"] = [{"type": "text", "text": current}]
                                 time.sleep(0.01)
                                 yield history
 
@@ -170,7 +174,8 @@ with gr.Blocks(title="Agent Immobilier Expert 🏠", fill_height=True) as demo:
                     tool_output = extract_text(msg_obj.content)
                     
                     if tool_message_index is not None:
-                        history[tool_message_index]["content"] += f"> **Résultat :** {tool_output}\n\n---\n\n"
+                        current_tool_text = extract_text(history[tool_message_index]["content"])
+                        history[tool_message_index]["content"] = [{"type": "text", "text": current_tool_text + f"> **Résultat :** {tool_output}\n\n---\n\n"}]
                         yield history
 
         except Exception as e:
@@ -179,7 +184,7 @@ with gr.Blocks(title="Agent Immobilier Expert 🏠", fill_height=True) as demo:
                  
             history.append({
                 "role": "assistant",
-                "content": f"Désolé, une erreur est survenue : {str(e)}"
+                "content": [{"type": "text", "text": f"Désolé, une erreur est survenue : {str(e)}"}]
             })
             yield history
 
@@ -228,7 +233,7 @@ with gr.Blocks(title="Agent Immobilier Expert 🏠", fill_height=True) as demo:
 
     def api_chat(user_message, history):
         history = history or []
-        history.append({"role": "user", "content": user_message})
+        history.append({"role": "user", "content": [{"type": "text", "text": user_message}]})
         for step in bot(history):
             yield step
 
