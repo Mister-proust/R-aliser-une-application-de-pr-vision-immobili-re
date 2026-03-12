@@ -33,3 +33,6 @@ dependencies = [
     "uvicorn[standard]>=0.41.0",
     "xgboost>=3.2.0",
 ]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
