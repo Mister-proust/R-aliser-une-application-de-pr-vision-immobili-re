@@ -59,12 +59,16 @@ LANGSMITH_ENDPOINT=https://eu.api.smith.langchain.com ou https://api.smith.langc
 LANGSMITH_PROJECT=<nom_de_votre_projet>
 ```
 
+#### Démarrer le serveur MCP
+
+```bash
+uv run src/mcp_server/server.py
+```
+
 #### Démarrer l'interface Gradio
 
 ```bash
-cd src
-cd agentia
-uv run main.py
+uv run src/agentia/main.py
 ```
 
 Accédez à l'interface de l'agent à l'adresse [http://127.0.0.1:7860/](http://127.0.0.1:7860/).

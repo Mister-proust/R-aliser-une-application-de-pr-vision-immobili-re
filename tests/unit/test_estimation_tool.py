@@ -10,7 +10,7 @@ from unittest.mock import patch, MagicMock
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
 
-from src.agentia.estimation_tool import (
+from mcp_server.estimation_tool import (
     safe_float,
     safe_int,
     get_commune_info,

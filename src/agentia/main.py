@@ -14,9 +14,7 @@ from langchain_mistralai import ChatMistralAI
 from langchain.agents import create_agent
 from langchain.agents.middleware import ModelRetryMiddleware, ModelCallLimitMiddleware
 
-from agentia.estimation_tool import estimate_property
-from agentia.geocoding_tool import geocoding_search, reverse_geocoding
-from agentia.tool_bdd import get_database_schema, execute_sql
+from agentia.mcp_client import get_mcp_tools
 
 load_dotenv()
 
@@ -36,16 +34,18 @@ model = ChatMistralAI(
 system_prompt = """
 Tu es un expert immobilier français.
 Tu aides les utilisateurs à estimer le prix de leurs biens immobiliers en utilisant l'outil 'estimate_property'.
-Tu peux aussi utiliser les outils de géocodage 'geocoding_search' et 'reverse_geocoding' pour trouver des informations précises sur les adresses.
+Tu peux aussi utiliser les outils de géocodage 'geocoding_search' et 'reverse_geocoding' pour trouver des informations précises sur as adresses.
 Les données de transactions immobilières sont stockées dans une base de données SQL, tu peux interagir avec elle via les outils 'get_database_schema' et 'execute_sql', elles peuvent être utilisées pour fournir des réponses précises basées sur les données historiques, proche des biens immobiliers similaires.
 Réponds en français.
 Si tu ne trouves pas de biens immobiliers similaires, elargi ton champs de recherche en enlevant des filtres de la requête SQL.
 Si la question est hors sujet, répond poliment "Je ne suis pas en mesure de répondre à cette question". 
 """
 
+tools = get_mcp_tools()
+
 agent = create_agent(
     model=model,
-    tools=[estimate_property, geocoding_search, reverse_geocoding, get_database_schema, execute_sql],
+    tools=tools,
     system_prompt=system_prompt,
 )
 
