@@ -11,7 +11,7 @@ from unittest.mock import patch, MagicMock
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
 
-from src.agentia.tool_bdd import get_database_schema, execute_sql
+from mcp_server.tool_bdd import get_database_schema, execute_sql
 
 
 # ---------------------------------------------------------------------------

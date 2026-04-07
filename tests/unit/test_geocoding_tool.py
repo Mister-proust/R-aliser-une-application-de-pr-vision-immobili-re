@@ -9,7 +9,7 @@ from unittest.mock import patch, MagicMock
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
 
-from src.agentia.geocoding_tool import geocoding_search, reverse_geocoding
+from mcp_server.geocoding_tool import geocoding_search, reverse_geocoding
 
 
 # ---------------------------------------------------------------------------

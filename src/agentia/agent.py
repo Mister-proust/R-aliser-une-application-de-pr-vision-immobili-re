@@ -9,9 +9,7 @@ from langchain_core.messages import HumanMessage, AIMessage
 from langchain_mistralai import ChatMistralAI
 from langchain.agents import create_agent
 
-from agentia.estimation_tool import estimate_property
-from agentia.geocoding_tool import geocoding_search, reverse_geocoding 
-from agentia.tool_bdd import get_database_schema, execute_sql
+from agentia.mcp_client import get_mcp_tools
 
 class RealEstateAgent:
     def __init__(self, model_name: str = "mistral-large-latest", temperature: float = 0.7):
@@ -33,16 +31,17 @@ class RealEstateAgent:
             Réponds en français.
             """
         )
+        self.tools = get_mcp_tools()
 
         self.agent = create_agent(
             model=self.model,
-            tools=[estimate_property, geocoding_search, reverse_geocoding, get_database_schema, execute_sql],
+            tools=self.tools,
             system_prompt=self.system_prompt
         )
 
     def ask(self, query: str):
         """
-        Envoie une requête à l'agent et retourne la réponse complète.
+        Sends a request to the agent and returns the full response.
         """
         return self.agent.invoke({"messages": [HumanMessage(content=query)]})
 
