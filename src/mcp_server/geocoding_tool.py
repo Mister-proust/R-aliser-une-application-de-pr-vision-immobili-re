@@ -1,13 +1,13 @@
 import requests
 import logging
 from typing import Optional, List, Dict, Any
-from langchain_core.tools import tool
+from .instance import mcp
 
 logger = logging.getLogger(__name__)
 
 BASE_URL = "https://data.geopf.fr/geocodage"
 
-@tool
+@mcp.tool()
 def geocoding_search(
     q: str,
     index: str = "address",
@@ -18,15 +18,15 @@ def geocoding_search(
     type: Optional[str] = None
 ) -> str:
     """
-    Recherche des coordonnées géographiques ou des adresses en France.
-    :param q: La chaîne de caractères à rechercher (ex: '73 Avenue de Paris Saint-Mandé').
-    :param index: Index de recherche : 'address' (par défaut), 'poi' (lieux), 'parcel' (parcelles).
-    :param limit: Nombre maximum de résultats (max 50).
-    :param postcode: Filtre par code postal.
-    :param citycode: Filtre par code INSEE.
-    :param city: Filtre par nom de commune.
-    :param type: Type de données adresse (ex: 'housenumber', 'street', 'municipality').
-    :return: Une chaîne formatée contenant les résultats de la recherche.
+    Search for geographic coordinates or addresses in France.
+    :param q: The character string to search for (ex: '73 Avenue de Paris Saint-Mandé').
+    :param index: Search index: 'address' (default), 'poi' (places), 'parcel' (parcels).
+    :param limit: Maximum number of results (max 50).
+    :param postcode: Filter by postal code.
+    :param citycode: Filter by INSEE code.
+    :param city: Filter by town name.
+    :param type: Address data type (eg: 'housenumber', 'street', 'municipality').
+    :return: A formatted string containing the search results.
     """
     endpoint = f"{BASE_URL}/search"
     params = {
@@ -66,7 +66,7 @@ def geocoding_search(
         logger.error(f"Erreur lors du géocodage : {e}")
         return f"Une erreur est survenue lors de la recherche : {str(e)}"
 
-@tool
+@mcp.tool()
 def reverse_geocoding(
     lon: float,
     lat: float,
@@ -74,12 +74,12 @@ def reverse_geocoding(
     limit: int = 1
 ) -> str:
     """
-    Trouve l'adresse ou le lieu correspondant à des coordonnées géographiques (longitude, latitude).
-    :param lon: Longitude du point.
-    :param lat: Latitude du point.
-    :param index: Index de recherche : 'address', 'poi', 'parcel'.
-    :param limit: Nombre de résultats.
-    :return: L'adresse ou le lieu trouvé.
+    Finds the address or place corresponding to geographic coordinates (longitude, latitude).
+    :param lon: Longitude of the point.
+    :param lat: Latitude of the point.
+    :param index: Search index: 'address', 'poi', 'parcel'.
+    :param limit: Number of results.
+    :return: The found address or place.
     """
     endpoint = f"{BASE_URL}/reverse"
     params = {

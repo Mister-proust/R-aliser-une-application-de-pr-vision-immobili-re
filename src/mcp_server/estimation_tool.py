@@ -4,8 +4,8 @@ import pandas as pd
 import requests
 import logging
 from typing import Dict, Any, Optional
-from langchain_core.tools import tool
 import app.config as config
+from .instance import mcp
 
 logger = logging.getLogger(__name__)
 
@@ -13,8 +13,8 @@ _model_cache = None
 
 def load_model():
     """
-    Charge le modèle pickle.
-    Utilise le cache pour éviter les rechargements.
+    Load the pickle model.
+    Use cache to avoid reloads.
     """
     global _model_cache
     
@@ -40,7 +40,7 @@ def load_model():
         raise Exception(f"Erreur lors du chargement du modèle: {e}")
 
 def safe_float(value, default=0.0):
-    """Convertit une valeur en float de manière sécurisée"""
+    """Converts a value to float securely"""
     if value is None:
         return default
     if isinstance(value, str) and not value.strip():
@@ -51,7 +51,7 @@ def safe_float(value, default=0.0):
         return default
 
 def safe_int(value, default=0):
-    """Convertit une valeur en int de manière sécurisée"""
+    """Converts a value to int securely"""
     if value is None or value == "":
         return default
     try:
@@ -71,7 +71,7 @@ TYPE_LOCAL_MAP = {
 
 def get_commune_info(commune_or_insee: str) -> Dict[str, Any]:
     """
-    Récupère les informations géographiques d'une commune depuis l'API Géo.
+    Retrieves the geographic information of a municipality from the Geo API.
     """
     BASE_URL = "https://geo.api.gouv.fr/communes"
     
@@ -127,7 +127,7 @@ def get_commune_info(commune_or_insee: str) -> Dict[str, Any]:
         logger.error(f"Erreur lors de la recherche de la commune: {e}")
         return None
 
-@tool
+@mcp.tool()
 def estimate_property(
     commune: str,
     type_bien: str,
@@ -137,14 +137,14 @@ def estimate_property(
     type_voie: str = "Rue"
 ) -> str:
     """
-    Estime le prix d'un bien immobilier en France.
-    :param commune: Nom de la commune ou code INSEE.
-    :param type_bien: Type de bien ('Maison' ou 'Appartement').
-    :param surface: Surface habitable en m2.
-    :param rooms: Nombre de pièces principales.
-    :param surface_terrain: Surface du terrain en m2 (0 si non applicable).
-    :param type_voie: Type de voie (ex: 'Rue', 'Avenue', 'Boulevard').
-    :return: Une chaîne de caractères contenant l'estimation du prix.
+    Estimate the price of real estate in France.
+    :param commune: Name of the commune or INSEE code.
+    :param property_type: Type of property ('House' or 'Apartment').
+    :param surface: Living space in m2.
+    :param rooms: Number of main rooms.
+    :param surface_land: Surface area of ​​the land in m2 (0 if not applicable).
+    :param type_voie: Type of road (eg: 'Street', 'Avenue', 'Boulevard').
+    :return: A string containing the estimated price.
     """
     try:
         pipeline = load_model()
