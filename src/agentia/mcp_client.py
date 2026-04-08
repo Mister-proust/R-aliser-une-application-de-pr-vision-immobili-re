@@ -3,14 +3,15 @@ import asyncio
 import logging
 import threading
 from typing import List, Optional, Coroutine, Any
-
+from dotenv import load_dotenv
 from fastmcp import Client
 from langchain_core.tools import StructuredTool
 from pydantic import BaseModel, create_model
 
+load_dotenv()
 logger = logging.getLogger(__name__)
-
-MCP_SERVER_URL = "http://127.0.0.1:8000/mcp"
+mcp_port = os.getenv("MCP_SERVER_PORT", "8001")
+MCP_SERVER_URL = f"http://127.0.0.1:{mcp_port}/mcp"
 
 class AsyncEventLoopThread(threading.Thread):
     def __init__(self):

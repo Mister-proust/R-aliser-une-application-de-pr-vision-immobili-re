@@ -1,6 +1,7 @@
 import os
 import sys
-
+from dotenv import load_dotenv
+load_dotenv()
 current_dir = os.path.dirname(os.path.abspath(__file__))
 src_dir = os.path.dirname(current_dir)
 if src_dir not in sys.path:
@@ -12,4 +13,4 @@ import mcp_server.geocoding_tool
 import mcp_server.tool_bdd
 
 if __name__ == "__main__":
-    mcp.run(transport="http", port=8000)
+    mcp.run(transport="http", port=int(os.getenv("MCP_SERVER_PORT", "8001")))

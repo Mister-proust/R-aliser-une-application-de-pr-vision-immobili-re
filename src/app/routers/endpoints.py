@@ -6,7 +6,7 @@ from datetime import timedelta
 import pickle
 from fastapi.security import OAuth2PasswordRequestForm
 import pandas as pd
-import app.config as config  # Assurez-vous que ce fichier existe
+import app.config as config
 import requests
 import shap
 import json
@@ -17,13 +17,9 @@ import os
 import numpy as np
 import logging
 import traceback
-
-# Setup logger
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
-
-# --- Cache global du modèle ---
 _model_cache = None
 _explainer_cache = None
 
@@ -85,23 +81,15 @@ def safe_int(value, default=0):
         return int(float(value))
     except (ValueError, TypeError):
         return default
-
-# --- Constantes (manquantes dans votre script original) ---
-# J'ajoute des placeholders pour que le script soit fonctionnel.
-# Remplissez-les avec vos vraies valeurs de mapping.
 TYPE_VOIE_MAP = {
     "Avenue": "AV",
     "Boulevard": "BD",
     "Rue": "RUE",
-    # etc.
 }
 TYPE_LOCAL_MAP = {
     "Appartement": "Appartement",
     "Maison": "Maison",
-    # etc.
 }
-
-# --- Fonctions de l'API ---
 
 def verify_token(authorization: Optional[str] = Header(None)):
     """
@@ -114,9 +102,6 @@ def verify_token(authorization: Optional[str] = Header(None)):
     if len(parts) != 2 or parts[0].lower() != "bearer":
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid Authorization header format")
     token = parts[1]
-    
-    # Simule l'existence de config.API_TOKEN si config n'est pas entièrement setup
-    # Dans un vrai scénario, config.API_TOKEN doit être défini.
     API_TOKEN = getattr(config, "API_TOKEN", "default_token_secret")
     
     if token != API_TOKEN:
@@ -154,8 +139,6 @@ def get_commune_info(commune_or_insee: str) -> Dict[str, Any]:
     Lève une HTTPException 404 si la commune n'est pas trouvée.
     """
     BASE_URL = "https://geo.api.gouv.fr/communes"
-    
-    # 1. Déterminer si l'entrée est un code INSEE ou un nom
     is_code_insee = (len(commune_or_insee) == 5 and 
                      (commune_or_insee.isdigit() or 
                       commune_or_insee[:2].upper() in ['2A', '2B']))
@@ -169,37 +152,27 @@ def get_commune_info(commune_or_insee: str) -> Dict[str, Any]:
         params = {
             'nom': commune_or_insee,
             'fields': 'nom,code,centre,population,surface',
-            'boost': 'population', # Priorise les grandes villes
+            'boost': 'population',
             'limit': 1
         }
 
     try:
-        # 2. Exécuter l'appel API
         response = requests.get(BASE_URL, params=params)
-        response.raise_for_status() # Lève une erreur si le statut HTTP est 4xx ou 5xx
+        response.raise_for_status()
         
         data = response.json()
-        
-        # 3. GESTION DES ERREURS (votre contrainte)
         if not data:
-            # Si data est une liste vide, l'API n'a rien trouvé
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, 
                 detail=f"Commune non trouvée: '{commune_or_insee}'"
             )
         
         commune_data = data[0]
-        
-        # 4. Extraire les données
         population = commune_data.get('population')
         surface_hectares = commune_data.get('surface') 
         coordinates = commune_data.get('centre', {}).get('coordinates')
-        
-        # Validation plus souple avec conversion sécurisée
         pop_safe = safe_float(population, 0.0)
         surf_safe = safe_float(surface_hectares, 0.0)
-        
-        # 5. Calculer la densité
         surface_km2 = surf_safe / 100.0
         densite = 0.0
         if surface_km2 > 0:
@@ -207,8 +180,6 @@ def get_commune_info(commune_or_insee: str) -> Dict[str, Any]:
         
         lat = coordinates[1] if coordinates and len(coordinates) > 1 else 0.0
         lon = coordinates[0] if coordinates and len(coordinates) > 0 else 0.0
-        
-        # 6. Retourner le dictionnaire EXACT que 'prediction_model' attend
         return {
             "densite": round(densite, 2),
             "population": pop_safe,
@@ -218,13 +189,11 @@ def get_commune_info(commune_or_insee: str) -> Dict[str, Any]:
         }
 
     except requests.exceptions.RequestException as e:
-        # L'API Géo est peut-être inaccessible
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE, 
             detail=f"Erreur de connexion à l'API Géo: {e}"
         )
     except Exception as e:
-        # Attrape d'autres erreurs inattendues (ex: parsing JSON)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
             detail=f"Erreur interne lors de la recherche de la commune: {e}"
@@ -235,19 +204,12 @@ def prediction_model(payload: Dict[str, Any]) -> Dict[str, Any]:
     """
     Charge le modèle et réalise une prédiction de prix immobilier à partir des données utilisateur.
     """
-    # --- 1️⃣ Chargement du modèle (utilise la fonction commune) ---
     pipeline = load_model()
-
-    # --- 2️⃣ Récupération des infos communes ---
     commune_key = payload.get("code_insee") or payload.get("commune")
     
     if commune_key:
-        # Si la clé existe, get_commune_info est appelée.
-        # Si la commune n'est pas trouvée, cette fonction lèvera une HTTPException 404
-        # et l'exécution de 'prediction_model' s'arrêtera ici.
         commune_features = get_commune_info(str(commune_key))
     else:
-        # Si l'utilisateur n'a fourni ni code_insee ni commune
         commune_features = {
             "densite": 0.0,
             "population": 0.0,
@@ -255,14 +217,8 @@ def prediction_model(payload: Dict[str, Any]) -> Dict[str, Any]:
             "latitude_centre": 0.0,
             "longitude_centre": 0.0
         }
-
-    # --- 3️⃣ Mapping des valeurs utilisateur vers celles du modèle ---
     type_voie = TYPE_VOIE_MAP.get(payload.get("type_voie", ""), payload.get("type_voie", ""))
     type_local = TYPE_LOCAL_MAP.get(payload.get("type_local", ""), payload.get("type_local", ""))
-
-    # --- 4️⃣ Construction de l'entrée modèle ---
-    # S'assure que les clés correspondent exactement à celles attendues par votre pipeline
-    # Support des clés alternatives venant du frontend simplifié
     surface = safe_float(payload.get("surface_reelle_bati"), 0.0)
     if surface == 0.0:
          surface = safe_float(payload.get("surface"), 0.0)
@@ -283,12 +239,8 @@ def prediction_model(payload: Dict[str, Any]) -> Dict[str, Any]:
         "latitude_centre": commune_features.get("latitude_centre", 0.0),
         "longitude_centre": commune_features.get("longitude_centre", 0.0)
     }])
-
-    # --- 5️⃣ Prédiction ---
     try:
         prediction = pipeline.predict(df_input)
-        
-        # S'assure que la prédiction est un nombre simple
         estimated_price = float(prediction[0])
         if pd.isna(estimated_price):
              raise ValueError("La prédiction a retourné NaN")
@@ -331,7 +283,6 @@ async def shap_explanation(payload: Dict[str, Any], auth: bool = Depends(verify_
     Retourne une explication SHAP pour une prédiction donnée (format base64 d'image).
     """
     try:
-        # 1. Charger le modèle et l'explainer
         pipeline = load_model()
         explainer = load_explainer()
         
@@ -340,8 +291,6 @@ async def shap_explanation(payload: Dict[str, Any], auth: bool = Depends(verify_
                 "error": "Explainer SHAP non disponible pour ce modèle",
                 "status": "error"
             }
-        
-        # 2. Récupérer les infos communes
         commune_key = payload.get("code_insee") or payload.get("commune")
         
         if commune_key:
@@ -354,12 +303,8 @@ async def shap_explanation(payload: Dict[str, Any], auth: bool = Depends(verify_
                 "latitude_centre": 0.0,
                 "longitude_centre": 0.0
             }
-        
-        # 3. Construire l'entrée modèle (identique à prediction_model)
         type_voie = TYPE_VOIE_MAP.get(payload.get("type_voie", ""), payload.get("type_voie", ""))
         type_local = TYPE_LOCAL_MAP.get(payload.get("type_local", ""), payload.get("type_local", ""))
-        
-        # Support des clés alternatives venant du frontend simplifié
         surface = safe_float(payload.get("surface_reelle_bati"), 0.0)
         if surface == 0.0:
              surface = safe_float(payload.get("surface"), 0.0)
@@ -380,42 +325,20 @@ async def shap_explanation(payload: Dict[str, Any], auth: bool = Depends(verify_
             "latitude_centre": commune_features.get("latitude_centre", 0.0),
             "longitude_centre": commune_features.get("longitude_centre", 0.0)
         }])
-        
-        # 4. Préparer les données (passer par le preprocessor de la pipeline)
         preprocessor = pipeline.named_steps.get('scaler') or pipeline.named_steps.get('preprocessor') or pipeline.named_steps.get('pre')
         if preprocessor:
             X_processed = preprocessor.transform(df_input)
         else:
             X_processed = df_input.values
-        
-        # 5. Générer l'explication SHAP
-        # Pour waterfall, on a besoin d'un objet Explanation, pas juste des valeurs numpy
         explanation = explainer(X_processed)
-        
-        # L'objet explanation peut contenir plusieurs lignes, on prend la première (et unique)
-        # shap_values_val est le tableau numpy des valeurs SHAP (pour la rétrocompatibilité du JSON de réponse)
         shap_values_val = explanation.values
-        if len(shap_values_val.shape) > 1: # Si (1, features)
+        if len(shap_values_val.shape) > 1:
              shap_values_val = shap_values_val[0]
-        
-        # Assigner les noms de features à l'explication pour que le graphique soit lisible
         explanation.feature_names = df_input.columns.tolist()
-        
-        # 6. Prédiction
         prediction = pipeline.predict(df_input)[0]
-        
-        # 7. Générer un graphique SHAP (Summary plot encodé en base64)
         plt.figure(figsize=(10, 4))
         try:
-            # Summary plot
-            # shap.summary_plot(shap_values, X_processed, feature_names=df_input.columns, plot_type="bar", show=False)
-            
-            # Waterfall plot (requiert un objet Explanation [index])
-            # On prend explanation[0] car on a une seule prédiction
             shap.plots.waterfall(explanation[0], show=False)
-            #shap.plots.beeswarm(explanation, show=False)
-            
-            # Convertir en base64
             buffer = BytesIO()
             plt.savefig(buffer, format='png', bbox_inches='tight')
             buffer.seek(0)
@@ -433,7 +356,6 @@ async def shap_explanation(payload: Dict[str, Any], auth: bool = Depends(verify_
         except Exception as plot_error:
             logger.error(f"SHAP Plot error: {plot_error}")
             traceback.print_exc()
-            # Si le graphique échoue, retourner quand même les valeurs SHAP
             return {
                 "status": "partial_success",
                 "prediction": safe_float(prediction),
@@ -457,15 +379,10 @@ async def shap_explanation(payload: Dict[str, Any], auth: bool = Depends(verify_
 @router.post("/predict", tags=["Prediction"], summary="Prévision (requiert token)")
 async def predict_protected(payload: Dict[str, Any], auth: bool = Depends(verify_token)):
     try:
-        # Tente d'utiliser le pipeline de ML complet
         return prediction_model(payload)
     except HTTPException as e:
-        # Si une HTTPException (ex: 404 commune non trouvée) est levée, 
-        # la re-lève pour que FastAPI la gère
         raise e
     except Exception as e:
-        # Si le pipeline échoue pour une autre raison (ex: chargement pickle, erreur pandas)
-        # on utilise le fallback
         fallback = perform_prediction(payload)
         return {"warning": "pipeline prediction failed, returning fallback", "error": str(e), "result": fallback}
 
@@ -487,8 +404,6 @@ async def get_map_data(
     import sqlite3
     import os
     from pathlib import Path
-    
-    # Chemin vers la base de données (depuis la racine du projet)
     base_dir = Path(__file__).parent.parent.parent.parent
     db_path = base_dir / "src" / "agentia" / "bdd" / "donnees_immo.db"
     
@@ -498,10 +413,7 @@ async def get_map_data(
     try:
         connection = sqlite3.connect(db_path)
         cursor = connection.cursor()
-        
-        # Déterminer le niveau d'agrégation selon le zoom
         if zoom <= 7:
-            # Agrégation par département
             query = """
                 SELECT 
                     SUBSTR(CAST(code_commune AS TEXT), 1, 2) as zone_code,
@@ -520,7 +432,6 @@ async def get_map_data(
             """
             level = "departement"
         elif zoom <= 10:
-            # Agrégation par département
             query = """
                 SELECT 
                     SUBSTR(CAST(code_commune AS TEXT), 1, 2) as zone_code,
@@ -539,7 +450,6 @@ async def get_map_data(
             """
             level = "departement"
         else:
-            # Agrégation par commune
             query = """
                 SELECT 
                     CAST(code_commune AS TEXT) as zone_code,
@@ -557,12 +467,8 @@ async def get_map_data(
                 HAVING nb_transactions >= 3
             """
             level = "commune"
-        
-        # Exécuter la requête
         cursor.execute(query, (south, north, west, east))
         results = cursor.fetchall()
-        
-        # Transformer en format JSON
         data_points = []
         for row in results:
             zone_code, prix_m2, nb_trans, prix_moyen = row
@@ -575,8 +481,6 @@ async def get_map_data(
                 })
         
         connection.close()
-        
-        # Calculer les statistiques pour la légende
         if data_points:
             prix_list = [p["prix_m2"] for p in data_points]
             stats = {
