@@ -12,7 +12,7 @@ API permettant de prédire les valeurs immobilières en utilisant un modèle de 
 
 # Server configuration
 HOST = "0.0.0.0"
-PORT = 8000
+PORT = int(os.getenv("MCP_SERVER_PORT", "8001"))
 RELOAD = True
 # Simple API token for a lightweight auth. Can be overridden with the API_TOKEN env var.
 API_TOKEN = os.getenv("API_TOKEN", "secret-token")

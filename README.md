@@ -58,7 +58,12 @@ LANGSMITH_API_KEY=<votre_clé_api_langsmith>
 LANGSMITH_ENDPOINT=https://eu.api.smith.langchain.com ou https://api.smith.langchain.com
 LANGSMITH_PROJECT=<nom_de_votre_projet>
 ```
-
+et pour la gestion des ports:
+```
+MCP_SERVER_PORT=8001
+FASTAPI_PORT=8000
+GRADIO_PORT=7860
+```
 #### Démarrer le serveur MCP
 
 ```bash
