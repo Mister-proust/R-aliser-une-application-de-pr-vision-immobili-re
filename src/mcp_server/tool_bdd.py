@@ -53,6 +53,24 @@ def execute_sql(query: str):
     try:
         cursor.execute(query)
         result = cursor.fetchall()
+        if not result and "where" in query.lower():
+            import re
+            patterns = {
+                "Code postal": r"Code postal\s*=\s*['\"](\d+)['\"]",
+                "Code departement": r"Code departement\s*=\s*['\"](\d+)['\"]",
+                "Commune": r"Commune\s*=\s*['\"]([^'\"]+)['\"]"
+            }
+            for col, pat in patterns.items():
+                match = re.search(pat, query, re.IGNORECASE)
+                if match:
+                    val = match.group(1)
+                    try:
+                        cursor.execute(f"SELECT COUNT(*) FROM clean_dvf WHERE \"{col}\" = ?", (val,))
+                        if cursor.fetchone()[0] == 0:
+                            connection.close()
+                            return f"Désolé, le lieu ({col} '{val}') n'est pas couvert par la base de données de transactions."
+                    except:
+                        pass
     except Exception as e:
         result = [str(e)]
 

@@ -101,6 +101,7 @@ def get_commune_info(commune_or_insee: str) -> Dict[str, Any]:
             return None
         
         commune_data = data[0]
+        code_insee = commune_data.get('code')
         population = commune_data.get('population')
         surface_hectares = commune_data.get('surface') 
         coordinates = commune_data.get('centre', {}).get('coordinates')
@@ -121,7 +122,8 @@ def get_commune_info(commune_or_insee: str) -> Dict[str, Any]:
             "population": pop_safe,
             "superficie_km2": round(surface_km2, 2),
             "latitude_centre": lat,
-            "longitude_centre": lon
+            "longitude_centre": lon,
+            "code_insee": code_insee
         }
     except Exception as e:
         logger.error(f"Erreur lors de la recherche de la commune: {e}")
@@ -152,6 +154,22 @@ def estimate_property(
         commune_features = get_commune_info(commune)
         if not commune_features:
             return f"Désolé, je n'ai pas pu trouver d'informations pour la commune : {commune}."
+        code_insee = commune_features.get("code_insee")
+        if code_insee:
+            dept = code_insee[:2]
+            db_path = os.path.join(os.path.dirname(__file__), "..", "agentia", "bdd", "donnees_immo.db")
+            if os.path.exists(db_path):
+                import sqlite3
+                conn = sqlite3.connect(db_path)
+                cursor = conn.cursor()
+                try:
+                    cursor.execute("SELECT COUNT(*) FROM clean_dvf WHERE \"Code departement\" = ?", (dept,))
+                    if cursor.fetchone()[0] == 0:
+                        conn.close()
+                        return f"Désolé, le département {dept} (commune {commune}) n'est pas couvert par ma base de données de transactions."
+                except:
+                    pass
+                conn.close()
 
         type_voie_mapped = TYPE_VOIE_MAP.get(type_voie, type_voie)
         type_local_mapped = TYPE_LOCAL_MAP.get(type_bien, type_bien)
