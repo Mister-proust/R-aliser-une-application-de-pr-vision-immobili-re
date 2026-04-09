@@ -1,0 +1,93 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fastapi-server
+  namespace: expert-immo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: fastapi-server
+  template:
+    metadata:
+      labels:
+        app: fastapi-server
+    spec:
+      # === Volumes ===
+      volumes:
+        - name: shared-data
+          persistentVolumeClaim:
+            claimName: expert-immo-pvc
+      
+      # === Init Container: Wait for MCP Server ===
+      initContainers:
+      - name: wait-for-mcp
+        image: busybox:1.35
+        command: ['sh', '-c', "until wget -q -O- http://mcp-service:8001/; do echo waiting for MCP; sleep 2; done"]
+      
+      # === Main Container ===
+      containers:
+      - name: fastapi-server
+        image: expert-immo-fastapi:latest  
+        imagePullPolicy: Never  
+        
+        ports:
+        - containerPort: 8000
+          name: http
+        
+        # === Environment Variables ===
+        env:
+        - name: MCP_SERVER_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: expert-immo-config
+              key: MCP_SERVER_HOST
+        - name: MCP_SERVER_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: expert-immo-config
+              key: MCP_SERVER_PORT
+        - name: PYTHONDONTWRITEBYTECODE
+          value: "1"
+        - name: PYTHONUNBUFFERED
+          value: "1"
+        
+        # === Volume Mounts ===
+        volumeMounts:
+        - name: shared-data
+          mountPath: /data  # Model storage
+        - name: shared-data
+          mountPath: /src/agentia/bdd  # Database storage
+        
+        # === Resource Limits ===
+        resources:
+          requests:
+            cpu: 200m
+            memory: 256Mi
+          limits:
+            cpu: 500m
+            memory: 1Gi
+        
+        # === Liveness/Readiness Probes ===
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 8000
+          initialDelaySeconds: 10
+          periodSeconds: 30
+          timeoutSeconds: 5
+          failureThreshold: 3
+        
+        readinessProbe:
+          httpGet:
+            path: /docs
+            port: 8000
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          timeoutSeconds: 3
+          failureThreshold: 2
+        
+        # === Security Context ===
+        securityContext:
+          runAsNonRoot: false
+          allowPrivilegeEscalation: false

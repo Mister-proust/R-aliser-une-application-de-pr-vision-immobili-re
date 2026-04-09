@@ -1,0 +1,52 @@
+---
+# MCP Server Service (Internal K3S communication)
+apiVersion: v1
+kind: Service
+metadata:
+  name: mcp-service
+  namespace: expert-immo
+spec:
+  type: ClusterIP  # Internal only, no external access needed
+  selector:
+    app: mcp-server
+  ports:
+  - name: mcp
+    port: 8001
+    targetPort: 8001
+    protocol: TCP
+
+---
+# FastAPI Server Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: fastapi-service
+  namespace: expert-immo
+spec:
+  type: NodePort  # Expose via node IP + random port, or use LoadBalancer if available
+  selector:
+    app: fastapi-server
+  ports:
+  - name: http
+    port: 8000
+    targetPort: 8000
+    protocol: TCP
+    nodePort: 30800  # Fixed port for easier access (kubectl port-forward alternative)
+
+---
+# Gradio Agent Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: gradio-service
+  namespace: expert-immo
+spec:
+  type: NodePort  # Expose for user access
+  selector:
+    app: gradio-agent
+  ports:
+  - name: gradio
+    port: 7860
+    targetPort: 7860
+    protocol: TCP
+    nodePort: 30786  # Fixed port for easier access

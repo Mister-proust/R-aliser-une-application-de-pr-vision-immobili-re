@@ -1,0 +1,40 @@
+FROM python:3.11-slim
+
+# Env
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
+
+WORKDIR /immo
+
+# Install system deps + uv
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Installer uv (important)
+RUN pip install uv
+
+# Copier les fichiers de dépendances
+COPY pyproject.toml uv.lock ./
+
+# Installer les deps (sans installer ton projet)
+RUN uv sync --locked --no-install-project --no-dev
+
+# Copier le code
+COPY src/ ./src
+
+# Copier modèle
+COPY data/models/xgb_pipeline.pkl /data/models/xgb_pipeline.pkl
+
+# Créer dossiers
+RUN mkdir -p /data/models && mkdir -p /agentia/bdd
+
+# Healthcheck (corrigé port)
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:8001/ || exit 1
+
+# Expose bon port
+EXPOSE 8001
+
+# Run avec uv (meilleure pratique)
+CMD ["uv", "run", "python", "src/app/main.py"]

@@ -1,0 +1,9 @@
+gradio
+python-dotenv
+fastmcp
+langchain-core
+langchain-mistralai
+langchain
+pydantic
+requests
+numpy
