@@ -4,7 +4,7 @@ import sqlite3
 
 # todo : Filtrer les colonnes que l'on souhaite conserver !
 
-connection = sqlite3.connect("donnees_immo.db")
+connection = sqlite3.connect("src/agentia/bdd/donnees_immo.db")
 
 # Charger le fichier CSV dans un DataFrame pandas
 df = pd.read_csv("../data/clean_dvf.csv", sep=";")

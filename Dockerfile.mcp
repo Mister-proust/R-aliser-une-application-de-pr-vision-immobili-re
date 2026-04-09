@@ -23,11 +23,12 @@ RUN uv sync --no-dev
 # Copier le code
 COPY src/ ./src
 
-# Copier modèle
-COPY data/models/xgb_pipeline.pkl /data/models/xgb_pipeline.pkl
-
 # Créer dossiers
 RUN mkdir -p /data/models && mkdir -p /agentia/bdd
+
+COPY src/agentia/bdd/donnees_immo.db src/agentia/bdd/donnees_immo.db
+COPY data/clean_dvf.csv /data/clean_dvf.csv
+COPY src/app/data/models/xgb_pipeline.pkl src/app/data/models/xgb_pipeline.pkl
 
 # Healthcheck (corrigé port)
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \

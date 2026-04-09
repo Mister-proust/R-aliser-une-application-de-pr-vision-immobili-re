@@ -14,10 +14,10 @@ venv/
 env/
 
 # DVC and data files
-*.dvc
+# *.dvc
 
 # Git
-.git
+# .git
 
 # OS files
 .DS_Store

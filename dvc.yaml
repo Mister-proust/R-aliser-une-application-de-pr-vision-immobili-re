@@ -15,3 +15,11 @@ stages:
     - scripts/model.py
     outs:
     - data/models/xgb_pipeline.pkl
+  create_db:
+    cmd : python scripts/transform_csv_to_db.py
+    deps:
+    - data/clean_dvf.csv
+    - data/communes-france-2025.csv
+    - scripts/transform_csv_to_db.py
+    outs:
+    - src/agentia/bdd/donnees_immo.db
