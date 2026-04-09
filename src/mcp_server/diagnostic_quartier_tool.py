@@ -35,6 +35,7 @@ def calculate_median(values: list) -> Optional[float]:
 
 @mcp.tool()
 def diagnostic_quartier(
+    code_insee: Optional[str] = None,
     code_postal: Optional[str] = None,
     commune_name: Optional[str] = None,
     latitude: Optional[float] = None,
@@ -47,7 +48,8 @@ def diagnostic_quartier(
     property type distribution, and price trend (1st vs 2nd half 2025).
     
     Parameters:
-    - code_postal: French postal code (5 digits), e.g., '75001'
+    - code_insee: INSEE code (5 digits), e.g., '75056' for Paris
+    - code_postal: French postal code (5 digits) - will be converted to INSEE code, e.g., '75001'
     - commune_name: Municipality name, e.g., 'Paris'
     - latitude, longitude: Geographic coordinates (returns closest municipality stats)
     
@@ -55,8 +57,12 @@ def diagnostic_quartier(
     """
     
     # === Validation ===
-    if not any([code_postal, commune_name, (latitude is not None and longitude is not None)]):
-        return "Erreur: Veuillez fournir soit un code postal, soit un nom de commune, soit des coordonnées (latitude, longitude)."
+    if not any([code_insee, code_postal, commune_name, (latitude is not None and longitude is not None)]):
+        return "Erreur: Veuillez fournir soit un code INSEE, un code postal, un nom de commune, soit des coordonnées (latitude, longitude)."
+    
+    # Validate formats
+    if code_insee and not validate_postal_code(code_insee):
+        return f"Erreur: Code INSEE invalide '{code_insee}'. Format attendu: 5 chiffres (ex: 75056)."
     
     if code_postal and not validate_postal_code(code_postal):
         return f"Erreur: Code postal invalide '{code_postal}'. Format attendu: 5 chiffres (ex: 75001)."
@@ -73,10 +79,28 @@ def diagnostic_quartier(
         cursor = connection.cursor()
         
         # === Build Query ===
-        # Get code_commune from postal code or commune name
+        # Get code_commune from INSEE code, postal code, or commune name
         code_commune = None
         
-        if code_postal:
+        if code_insee:
+            # Code INSEE is directly the code_commune
+            code_commune = code_insee
+            # Verify the code exists in database
+            cursor.execute(
+                """
+                SELECT code_commune FROM Communes 
+                WHERE code_commune = ?
+                LIMIT 1
+                """,
+                (code_insee,)
+            )
+            result = cursor.fetchone()
+            if not result:
+                connection.close()
+                return f"Aucune commune trouvée avec le code INSEE {code_insee}. Vérifiez que le code est correct et que la région est couverte par la base de données."
+        
+        elif code_postal:
+            # Convert postal code to INSEE code
             cursor.execute(
                 """
                 SELECT code_commune FROM Communes 
@@ -90,7 +114,7 @@ def diagnostic_quartier(
                 code_commune = result[0]
             else:
                 connection.close()
-                return f"Aucune commune trouvée avec le code postal {code_postal}. Cette région n'est peut-être pas couverte par la base de données."
+                return f"Aucune commune trouvée avec le code postal {code_postal}. Vérifiez que le code est correct et que la région est couverte par la base de données."
         
         elif commune_name:
             cursor.execute(

@@ -198,6 +198,69 @@ cython_debug/
 #  Cursor is an AI-powered code editor. `.cursorignore` specifies files/directories to
 #  exclude from AI features like autocomplete and code analysis. Recommended for sensitive data
 #  refer to https://docs.cursor.com/context/ignore-files
+
+# ============================================================
+# SECURITY: Sensitive Files & Secrets (NEVER commit these!)
+# ============================================================
+
+# Environment & secrets files
+.env
+.env.*.local
+.env.local
+.env.*.production
+secrets.json
+secrets.yaml
+.secrets.*
+.secret*
+
+# Cryptographic keys and certificates
+*.key
+*.pem
+*.p12
+*.pfx
+*.jks
+*.keystore
+private.key
+public.key
+certificate.crt
+*.csr
+
+# Kubernetes configurations
+kubeconfig
+kubeconfig*
+**/k3s.yaml
+**/config.yaml
+.kube/config
+
+# AWS & Cloud credentials
+.aws/credentials
+.aws/config
+~/.aws/*
+aws_credentials.txt
+
+# Docker secrets
+docker-compose.override.yml
+.docker/config.json
+
+# SSH keys
+.ssh/
+*.pub
+known_hosts
+
+# API tokens & keys (various tools)
+.github/workflows/secrets/*
+tokens.txt
+api_keys.txt
+credentials.txt
+
+# Temporary secret files
+temp_secret*
+backup_secret*
+old_secret*
+
+# IDE local secrets
+.vscode/settings.local.json
+.idea/misc.xml
 .cursorignore
 .cursorindexingignore
 
@@ -215,4 +278,4 @@ notebooks/
 # VSCode workspace
 workspace.code-workspace
 notebook/mlruns
-donnees_immo.db
+

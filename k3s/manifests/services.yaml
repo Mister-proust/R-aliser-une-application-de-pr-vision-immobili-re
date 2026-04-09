@@ -9,6 +9,10 @@ spec:
   type: ClusterIP  # Internal only, no external access needed
   selector:
     app: mcp-server
+  sessionAffinity: ClientIP  # Important: MCP is stateful
+  sessionAffinityConfig:
+    clientIP:
+      timeoutSeconds: 10  # Timeout 10s
   ports:
   - name: mcp
     port: 8001

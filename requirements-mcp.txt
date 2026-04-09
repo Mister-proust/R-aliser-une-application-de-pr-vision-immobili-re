@@ -1,7 +1,0 @@
-fastmcp
-requests
-pandas
-numpy
-scikit-learn
-xgboost
-python-dotenv

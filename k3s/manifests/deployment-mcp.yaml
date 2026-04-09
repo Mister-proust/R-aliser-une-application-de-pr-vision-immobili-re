@@ -4,7 +4,7 @@ metadata:
   name: mcp-server
   namespace: expert-immo
 spec:
-  replicas: 1  # Single replica for local K3S (note: no built-in load balancing for MCP)
+  replicas: 3
   selector:
     matchLabels:
       app: mcp-server
@@ -13,6 +13,10 @@ spec:
       labels:
         app: mcp-server
     spec:
+      # === Image Pull Secrets for GHCR ===
+      imagePullSecrets:
+      - name: ghcr-secret
+      
       # === Volumes ===
       volumes:
         - name: shared-data
@@ -22,12 +26,15 @@ spec:
       # === Containers ===
       containers:
       - name: mcp-server
-        image: expert-immo-mcp:latest  # Change to your image:tag
-        imagePullPolicy: Never  # Use local image (K3S default)
+        image: IMAGE_PLACEHOLDER
+        imagePullPolicy: IfNotPresent
         
         ports:
         - containerPort: 8001
           name: mcp-port
+        
+        # === Command Override (MCP Server) ===
+        command: ["uv", "run", "python", "src/mcp_server/server.py"]
         
         # === Environment Variables ===
         env:
