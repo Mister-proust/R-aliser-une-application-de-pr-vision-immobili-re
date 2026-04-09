@@ -256,4 +256,4 @@ with gr.Blocks(title="Agent Immobilier Expert 🏠", fill_height=True) as demo:
     demo.queue(default_concurrency_limit=1)
 
 if __name__ == "__main__":
-    demo.launch()
+    demo.launch(server_name="0.0.0.0")
