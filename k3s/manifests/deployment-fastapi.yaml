@@ -4,7 +4,7 @@ metadata:
   name: fastapi-server
   namespace: expert-immo
 spec:
-  replicas: 1
+  replicas: 3
   selector:
     matchLabels:
       app: fastapi-server
@@ -13,6 +13,10 @@ spec:
       labels:
         app: fastapi-server
     spec:
+      # === Image Pull Secrets for GHCR ===
+      imagePullSecrets:
+      - name: ghcr-secret
+      
       # === Volumes ===
       volumes:
         - name: shared-data
@@ -28,12 +32,15 @@ spec:
       # === Main Container ===
       containers:
       - name: fastapi-server
-        image: expert-immo-fastapi:latest  
-        imagePullPolicy: Never  
+        image: IMAGE_PLACEHOLDER
+        imagePullPolicy: IfNotPresent  
         
         ports:
         - containerPort: 8000
           name: http
+        
+        # === Command Override (FastAPI) ===
+        command: ["uv", "run", "python", "src/app/main.py"]
         
         # === Environment Variables ===
         env:

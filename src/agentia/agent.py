@@ -18,7 +18,7 @@ class RealEstateAgent:
         self.model = ChatMistralAI(
             model=model_name,
             temperature=temperature,
-            api_key=os.getenv("MISTRAL_API_KEY", "evMCtFXwpAu7M3gidEWhXNdY7mRmYOaz")
+            api_key=os.getenv("MISTRAL_API_KEY")
         )
 
         self.system_prompt = (

@@ -4,7 +4,7 @@ metadata:
   name: gradio-agent
   namespace: expert-immo
 spec:
-  replicas: 1
+  replicas: 3
   selector:
     matchLabels:
       app: gradio-agent
@@ -13,6 +13,10 @@ spec:
       labels:
         app: gradio-agent
     spec:
+      # === Image Pull Secrets for GHCR ===
+      imagePullSecrets:
+      - name: ghcr-secret
+      
       # === Volumes ===
       volumes:
         - name: shared-data
@@ -28,12 +32,15 @@ spec:
       # === Main Container ===
       containers:
       - name: gradio-agent
-        image: expert-immo-gradio:latest  # Change to your image:tag
-        imagePullPolicy: Never  # Use local image
+        image: IMAGE_PLACEHOLDER
+        imagePullPolicy: IfNotPresent
         
         ports:
         - containerPort: 7860
           name: gradio
+        
+        # === Command Override (Gradio Agent) ===
+        command: ["uv", "run", "python", "src/agentia/main.py"]
         
         # === Environment Variables ===
         env:
