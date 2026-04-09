@@ -141,14 +141,27 @@ def estimate_property(
     """
     Estimate the price of real estate in France.
     :param commune: Name of the commune or INSEE code.
-    :param property_type: Type of property ('House' or 'Apartment').
+    :param type_bien: Type of property ('Maison' or 'Appartement').
     :param surface: Living space in m2.
     :param rooms: Number of main rooms.
-    :param surface_land: Surface area of ​​the land in m2 (0 if not applicable).
-    :param type_voie: Type of road (eg: 'Street', 'Avenue', 'Boulevard').
+    :param surface_terrain: Surface area of the land in m2 (0 if not applicable).
+    :param type_voie: Type of road (eg: 'Rue', 'Avenue', 'Boulevard').
     :return: A string containing the estimated price.
     """
     try:
+        # === Input Validation ===
+        if not commune or not isinstance(commune, str) or len(commune.strip()) == 0:
+            return "Erreur: Veuillez fournir un nom de commune valide."
+        
+        if type_bien not in ["Maison", "Appartement"]:
+            return f"Erreur: Type de bien invalide '{type_bien}'. Types autorisés: 'Maison', 'Appartement'."
+        
+        if surface <= 0:
+            return "Erreur: La surface doit être supérieure à 0 m²."
+        
+        if rooms < 1:
+            return "Erreur: Le nombre de pièces doit être au minimum 1."
+        
         pipeline = load_model()
 
         commune_features = get_commune_info(commune)

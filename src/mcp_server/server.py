@@ -11,6 +11,7 @@ from mcp_server.instance import mcp
 import mcp_server.estimation_tool
 import mcp_server.geocoding_tool
 import mcp_server.tool_bdd
+import mcp_server.diagnostic_quartier_tool
 
 if __name__ == "__main__":
-    mcp.run(transport="http", port=int(os.getenv("MCP_SERVER_PORT", "8001")))
+    mcp.run(transport="http", port=int(os.getenv("MCP_SERVER_PORT", "8001")), host=os.getenv("MCP_SERVER_HOST", "0.0.0.0"))

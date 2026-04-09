@@ -28,3 +28,13 @@ mlflow
 xgboost
 prometheus-fastapi-instrumentator
 shap
+
+fastmcp
+gradio
+langchain
+langchain-community
+langchain-huggingface
+langchain-mistralai
+langgraph
+langsmith
+prometheus-fastapi-instrumentator

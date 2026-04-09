@@ -1,0 +1,102 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gradio-agent
+  namespace: expert-immo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: gradio-agent
+  template:
+    metadata:
+      labels:
+        app: gradio-agent
+    spec:
+      # === Volumes ===
+      volumes:
+        - name: shared-data
+          persistentVolumeClaim:
+            claimName: expert-immo-pvc
+      
+      # === Init Container: Wait for MCP Server ===
+      initContainers:
+      - name: wait-for-mcp
+        image: busybox:1.35
+        command: ['sh', '-c', "until wget -q -O- http://mcp-service:8001/; do echo waiting for MCP; sleep 2; done"]
+      
+      # === Main Container ===
+      containers:
+      - name: gradio-agent
+        image: expert-immo-gradio:latest  # Change to your image:tag
+        imagePullPolicy: Never  # Use local image
+        
+        ports:
+        - containerPort: 7860
+          name: gradio
+        
+        # === Environment Variables ===
+        env:
+        - name: MCP_SERVER_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: expert-immo-config
+              key: MCP_SERVER_HOST
+        - name: MCP_SERVER_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: expert-immo-config
+              key: MCP_SERVER_PORT
+        - name: MISTRAL_API_KEY
+          valueFrom:
+            configMapKeyRef:
+              name: expert-immo-config
+              key: MISTRAL_API_KEY
+        - name: PYTHONDONTWRITEBYTECODE
+          value: "1"
+        - name: PYTHONUNBUFFERED
+          value: "1"
+        - name: GRADIO_SERVER_NAME
+          value: "0.0.0.0"  # Gradio must listen on all interfaces
+        - name: GRADIO_SERVER_PORT
+          value: "7860"
+        
+        # === Volume Mounts ===
+        volumeMounts:
+        - name: shared-data
+          mountPath: /data  # Model storage
+        - name: shared-data
+          mountPath: /app/agentia/bdd  # Database storage
+        
+        # === Resource Limits ===
+        resources:
+          requests:
+            cpu: 200m
+            memory: 512Mi
+          limits:
+            cpu: 800m
+            memory: 2Gi  # Gradio + LangChain needs more memory
+        
+        # === Liveness/Readiness Probes ===
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 7860
+          initialDelaySeconds: 15
+          periodSeconds: 30
+          timeoutSeconds: 5
+          failureThreshold: 3
+        
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 7860
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 3
+          failureThreshold: 2
+        
+        # === Security Context ===
+        securityContext:
+          runAsNonRoot: false
+          allowPrivilegeEscalation: false

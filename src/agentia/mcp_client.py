@@ -11,7 +11,8 @@ from pydantic import BaseModel, create_model
 load_dotenv()
 logger = logging.getLogger(__name__)
 mcp_port = os.getenv("MCP_SERVER_PORT", "8001")
-MCP_SERVER_URL = f"http://127.0.0.1:{mcp_port}/mcp"
+mcp_host=os.getenv("MCP_SERVER")
+MCP_SERVER_URL = f"http://{mcp_host}:{mcp_port}/mcp"
 
 class AsyncEventLoopThread(threading.Thread):
     def __init__(self):
