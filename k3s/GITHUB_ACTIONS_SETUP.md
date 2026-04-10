@@ -118,42 +118,42 @@ export KUBECONFIG=/path/to/k3s.yaml
 kubectl cluster-info
 
 # Deploy with helper script
-./scripts/deploy-k3s.sh "ghcr.io/mister-proust/r-aliser-une-application-de-pr-vision-immobili-re:main-abc1234" expert-immo
+./scripts/deploy-k3s.sh "ghcr.io/mister-proust/r-aliser-une-application-de-pr-vision-immobili-re:main-abc1234" g3-immo
 ```
 
 ## Step 5: Monitor Deployment
 
 ### Check Pod Status:
 ```bash
-# List all pods in expert-immo namespace
-kubectl get pods -n expert-immo
+# List all pods in g3-immo namespace
+kubectl get pods -n g3-immo
 
 # Watch pods in real-time
-kubectl get pods -n expert-immo -w
+kubectl get pods -n g3-immo -w
 
 # Describe a specific pod
-kubectl describe pod <pod-name> -n expert-immo
+kubectl describe pod <pod-name> -n g3-immo
 
 # View pod logs
-kubectl logs <pod-name> -n expert-immo
+kubectl logs <pod-name> -n g3-immo
 ```
 
 ### Check Service Status:
 ```bash
 # List services
-kubectl get svc -n expert-immo
+kubectl get svc -n g3-immo
 
 # Get external IPs/NodePorts
-kubectl get svc -n expert-immo -o wide
+kubectl get svc -n g3-immo -o wide
 ```
 
 ### Verify Image Pull:
 ```bash
 # Check if GHCR secret is mounted
-kubectl get secret -n expert-immo
+kubectl get secret -n g3-immo
 
 # Inspect pod events (shows image pull errors)
-kubectl describe pod <pod-name> -n expert-immo | grep -A 10 Events
+kubectl describe pod <pod-name> -n g3-immo | grep -A 10 Events
 ```
 
 ## Step 6: Access Deployed Services
@@ -171,7 +171,7 @@ http://datalab.myconnectech.fr:30786
 
 ### MCP Service (Internal Only):
 ```
-mcp-service.expert-immo.svc.cluster.local:8001
+mcp-service.g3-immo.svc.cluster.local:8001
 ```
 
 ## Troubleshooting
@@ -179,14 +179,14 @@ mcp-service.expert-immo.svc.cluster.local:8001
 ### Issue: ImagePullBackOff Error
 **Symptom**: Pod stuck in `ImagePullBackOff` state
 ```bash
-kubectl describe pod mcp-server-xyz -n expert-immo
+kubectl describe pod mcp-server-xyz -n g3-immo
 # Error: failed to pull image "ghcr.io/...": authentication required
 ```
 
 **Solution**:
 1. Verify `ghcr-secret` exists:
    ```bash
-   kubectl get secret ghcr-secret -n expert-immo
+   kubectl get secret ghcr-secret -n g3-immo
    ```
 
 2. Recreate the secret:
@@ -196,20 +196,20 @@ kubectl describe pod mcp-server-xyz -n expert-immo
      --docker-username=<github-username> \
      --docker-password=<GHCR_TOKEN> \
      --docker-email=<github-email> \
-     -n expert-immo --dry-run=client -o yaml | kubectl apply -f -
+     -n g3-immo --dry-run=client -o yaml | kubectl apply -f -
    ```
 
 3. Restart pods:
    ```bash
-   kubectl rollout restart deployment/mcp-server -n expert-immo
-   kubectl rollout restart deployment/fastapi-server -n expert-immo
-   kubectl rollout restart deployment/gradio-agent -n expert-immo
+   kubectl rollout restart deployment/mcp-server -n g3-immo
+   kubectl rollout restart deployment/fastapi-server -n g3-immo
+   kubectl rollout restart deployment/gradio-agent -n g3-immo
    ```
 
 ### Issue: Pod Stuck in Pending State
 **Symptom**: Pod never becomes `Running`
 ```bash
-kubectl describe pod <pod-name> -n expert-immo
+kubectl describe pod <pod-name> -n g3-immo
 # Events: Insufficient memory, Insufficient CPU, etc.
 ```
 
@@ -222,14 +222,14 @@ kubectl describe pod <pod-name> -n expert-immo
 2. Reduce resource requests in deployments:
    ```bash
    # Open deployment YAML and reduce `resources.requests`
-   kubectl edit deployment mcp-server -n expert-immo
+   kubectl edit deployment mcp-server -n g3-immo
    ```
 
 ### Issue: MCP StatefulnessProblem
 **Symptom**: Requests from same client going to different pods
 ```bash
 # Verify sessionAffinity is set
-kubectl get svc mcp-service -n expert-immo -o jsonpath='{.spec.sessionAffinity}'
+kubectl get svc mcp-service -n g3-immo -o jsonpath='{.spec.sessionAffinity}'
 # Should output: ClientIP
 ```
 
@@ -237,7 +237,7 @@ kubectl get svc mcp-service -n expert-immo -o jsonpath='{.spec.sessionAffinity}'
 - This is already configured in `services.yaml` with `sessionAffinity: ClientIP`
 - Redeploy services:
   ```bash
-  kubectl apply -f k3s/manifests/services.yaml -n expert-immo
+  kubectl apply -f k3s/manifests/services.yaml -n g3-immo
   ```
 
 ## Workflow Execution Details
@@ -255,7 +255,7 @@ kubectl get svc mcp-service -n expert-immo -o jsonpath='{.spec.sessionAffinity}'
 1. Checkout code
 2. Setup kubeconfig from secrets
 3. Verify kubectl connectivity
-4. Create/ensure namespace `expert-immo` exists
+4. Create/ensure namespace `g3-immo` exists
 5. Create GHCR docker-registry secret
 6. Create generic environment secrets
 7. Deploy 3 services:
@@ -278,7 +278,7 @@ kubectl create secret docker-registry ghcr-secret \
   --docker-username=<username> \
   --docker-password=<new-token> \
   --docker-email=<email> \
-  -n expert-immo \
+  -n g3-immo \
   --dry-run=client -o yaml | kubectl apply -f -
 ```
 
@@ -288,7 +288,7 @@ kubectl create secret docker-registry ghcr-secret \
 kubectl create secret generic expert-immo-env \
   --from-literal=MISTRAL_API_KEY=new_key \
   --from-literal=MCP_SERVER_HOST=... \
-  -n expert-immo \
+  -n g3-immo \
   --dry-run=client -o yaml | kubectl apply -f -
 
 # Restart pods to pick up changes

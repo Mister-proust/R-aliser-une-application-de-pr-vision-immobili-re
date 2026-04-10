@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: mcp-server
-  namespace: expert-immo
+  namespace: g3-immo
 spec:
   replicas: 3
   selector:
@@ -21,7 +21,7 @@ spec:
       volumes:
         - name: shared-data
           persistentVolumeClaim:
-            claimName: expert-immo-pvc
+            claimName: g3-pvc
       
       # === Containers ===
       containers:
@@ -41,7 +41,7 @@ spec:
         - name: MCP_SERVER_PORT
           valueFrom:
             configMapKeyRef:
-              name: expert-immo-config
+              name: g3-config
               key: MCP_SERVER_PORT
         - name: PYTHONDONTWRITEBYTECODE
           value: "1"

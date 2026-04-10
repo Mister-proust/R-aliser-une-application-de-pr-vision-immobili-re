@@ -1,6 +1,8 @@
 # ✅ GitHub Actions + K3S Workflow - Implementation Complete!
 
-## 🎉 What's Been Done
+> ⚠️ **NOTE IMPORTANTE** : Ce fichier est déprecié. Consultez `GETTING_STARTED.md` pour le guide maître unifié.
+
+## Namespace utilisé : `g3-immo`
 
 Your automated CI/CD pipeline is ready! Here's what was created:
 
@@ -69,7 +71,7 @@ LANGSMITH_API_KEY=<your_langsmith_api_key_from_local_env>
 LANGSMITH_PROJECT=<your_project_name_from_local_env>
 
 # K3S network configuration
-MCP_SERVER_HOST=mcp-service.expert-immo.svc.cluster.local
+MCP_SERVER_HOST=mcp-service.g3-immo.svc.cluster.local
 MCP_SERVER_PORT=8001
 ```
 (One variable per line, KEY=VALUE format - Copy real values ONLY from your local .env)
@@ -107,12 +109,12 @@ git push origin main
 ssh p4g3@datalab.myconnectech.fr
 
 # Check pods
-kubectl get pods -n expert-immo
+kubectl get pods -n g3-immo
 
 # Should see 3 mcp-server, 3 fastapi-server, 3 gradio-agent pods
 
 # Watch deployment
-kubectl get pods -n expert-immo -w
+kubectl get pods -n g3-immo -w
 ```
 
 **Test Access Points**
@@ -203,7 +205,7 @@ Access via nodeport on datalab
 | Component | Configuration | Value |
 |-----------|---|---|
 | **Image Registry** | GHCR | ghcr.io/mister-proust/... |
-| **Namespace** | K3S | expert-immo |
+| **Namespace** | K3S | g3-immo |
 | **MCP Service** | Type | ClusterIP (internal) |
 | **MCP Affinity** | SessionAffinity | ClientIP (10s timeout) |
 | **FastAPI** | NodePort | 30800 |
@@ -218,7 +220,7 @@ Access via nodeport on datalab
 ### "ImagePullBackOff" Error
 → Check GHCR_TOKEN secret is correct
 ```bash
-kubectl describe pod <pod-name> -n expert-immo
+kubectl describe pod <pod-name> -n g3-immo
 ```
 
 ### Pod Stuck in "Pending"
@@ -236,7 +238,7 @@ git push origin main
 ### MCP Service Not Responding
 → Verify sessionAffinity is set
 ```bash
-kubectl get svc mcp-service -n expert-immo -o json | grep sessionAffinity
+kubectl get svc mcp-service -n g3-immo -o json | grep sessionAffinity
 ```
 
 See `k3s/GITHUB_ACTIONS_SETUP.md` for detailed troubleshooting.
@@ -266,10 +268,10 @@ See `k3s/GITHUB_ACTIONS_SETUP.md` for detailed troubleshooting.
 You'll know it's working when:
 1. ✅ GitHub Actions workflow completes successfully
 2. ✅ Image appears in GHCR (ghcr.io/mister-proust/...)
-3. ✅ 3 pods of each service running: `kubectl get pods -n expert-immo`
+3. ✅ 3 pods of each service running: `kubectl get pods -n g3-immo`
 4. ✅ FastAPI responds: http://datalab.myconnectech.fr:30800
 5. ✅ Gradio responds: http://datalab.myconnectech.fr:30786
-6. ✅ MCP service healthy: `kubectl logs mcp-server-* -n expert-immo`
+6. ✅ MCP service healthy: `kubectl logs mcp-server-* -n g3-immo`
 
 ---
 
@@ -281,7 +283,7 @@ You'll know it's working when:
 | How do I extract kubeconfig? | See `k3s/GITHUB_ACTIONS_SETUP.md` Step 1.2 |
 | What if workflow fails? | Check GitHub Actions logs, then k3s/GITHUB_ACTIONS_SETUP.md troubleshooting |
 | Can I deploy manually? | Yes: `./scripts/deploy-k3s.sh <image-tag>` |
-| How do I monitor K3S pods? | SSH to datalab, then `kubectl get pods -n expert-immo` |
+| How do I monitor K3S pods? | SSH to datalab, then `kubectl get pods -n g3-immo` |
 
 ---
 

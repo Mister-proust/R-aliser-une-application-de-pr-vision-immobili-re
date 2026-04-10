@@ -1,6 +1,8 @@
 # 📋 GitHub Actions + K3S Deployment - Implementation Checklist
 
-## ✅ Implementation Completed
+> ⚠️ **NOTE IMPORTANTE** : Ce fichier est déprecié. Consultez `GETTING_STARTED.md` pour le guide maître unifié.
+
+## Namespace utilisé : `g3-immo`
 
 ### Phase 1: Workflow & CI/CD Setup
 - [x] Create `.github/workflows/deploy-k3s.yml` workflow
@@ -94,7 +96,7 @@ LANGSMITH_TRACING=true
 LANGSMITH_ENDPOINT=https://eu.api.smith.langchain.com
 LANGSMITH_API_KEY=<copy_from_local_env>
 LANGSMITH_PROJECT=<copy_from_local_env>
-MCP_SERVER_HOST=mcp-service.expert-immo.svc.cluster.local
+MCP_SERVER_HOST=mcp-service.g3-immo.svc.cluster.local
 MCP_SERVER_PORT=8001
 ```
 → Paste into GitHub Secret: `ENV_SECRETS`
@@ -118,7 +120,7 @@ git push origin main
 **[ ] Verify K3S pods (SSH to datalab)**
 ```bash
 ssh p4g3@datalab.myconnectech.fr
-kubectl get pods -n expert-immo
+kubectl get pods -n g3-immo
 # Should see 3x mcp-server, 3x fastapi-server, 3x gradio-agent
 ```
 
@@ -199,7 +201,7 @@ Result:
 - GHCR credentials managed securely
 
 ✅ **RBAC Ready**
-- K3S namespace isolation (expert-immo)
+- K3S namespace isolation (g3-immo)
 - ServiceAccount recommendations (future enhancement)
 
 ✅ **Image Security**
@@ -225,7 +227,7 @@ Result:
 
 ### Scale Deployments
 ```bash
-kubectl scale deployment/fastapi-server --replicas=5 -n expert-immo
+kubectl scale deployment/fastapi-server --replicas=5 -n g3-immo
 ```
 
 ### Update Resource Limits
@@ -245,7 +247,7 @@ Modify `.github/workflows/deploy-k3s.yml` metadata action
 ### Rollback to Previous Version
 ```bash
 kubectl set image deployment/fastapi-server \
-  fastapi-server=ghcr.io/.../v1.0.0 -n expert-immo
+  fastapi-server=ghcr.io/.../v1.0.0 -n g3-immo
 ```
 
 ---

@@ -9,7 +9,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  NAMESPACE: expert-immo
+  NAMESPACE: g3-immo
   IMAGE_NAME: mister-proust/r-aliser-une-application-de-pr-vision-immobili-re
 
 jobs:
@@ -129,7 +129,7 @@ jobs:
           # Parse ENV_SECRETS and create kubectl secret
           # Format expected: "KEY1=value1\nKEY2=value2\n..."
           
-          kubectl delete secret expert-immo-env \
+          kubectl delete secret g3-env \
             --namespace=$NAMESPACE \
             --ignore-not-found
           
@@ -141,32 +141,32 @@ jobs:
             fi
           done <<< "$ENV_SECRETS"
           
-          kubectl create secret generic expert-immo-env \
+          kubectl create secret generic g3-env \
             $ENV_ARGS \
             --namespace=$NAMESPACE
           
           echo "✅ Environment secrets created/updated"
       
+      - name: Apply ConfigMap and PVC
+        run: |
+          kubectl apply -f k3s/manifests/pvc-config.yaml -n $NAMESPACE
+          echo "✅ PVC and ConfigMap applied"
+      
       - name: Deploy MCP service
         env:
           IMAGE: ${{ steps.image-tag.outputs.FULL_IMAGE }}
         run: |
-          kubectl set image deployment/g3-app \
-            g3-app=$IMAGE \
-            --namespace=$NAMESPACE \
-            || echo "⚠️  Deployment not yet created, will apply manifest"
-          
           # Apply deployment file with image substitution
           cat k3s/manifests/deployment-mcp.yaml | \
             sed "s|IMAGE_PLACEHOLDER|$IMAGE|g" | \
-            kubectl apply -f - --namespace=$NAMESPACE
+            kubectl apply -f - -n $NAMESPACE
           
           echo "✅ MCP deployment applied"
       
       - name: Wait for MCP pod to be ready
         run: |
           kubectl wait --for=condition=ready pod \
-            -l app=g3-app \
+            -l app=mcp-server \
             --namespace=$NAMESPACE \
             --timeout=300s
           echo "✅ MCP pod ready"
@@ -177,7 +177,7 @@ jobs:
         run: |
           cat k3s/manifests/deployment-fastapi.yaml | \
             sed "s|IMAGE_PLACEHOLDER|$IMAGE|g" | \
-            kubectl apply -f - --namespace=$NAMESPACE
+            kubectl apply -f - -n $NAMESPACE
           
           echo "✅ FastAPI deployment applied"
       
@@ -187,26 +187,25 @@ jobs:
         run: |
           cat k3s/manifests/deployment-gradio.yaml | \
             sed "s|IMAGE_PLACEHOLDER|$IMAGE|g" | \
-            kubectl apply -f - --namespace=$NAMESPACE
+            kubectl apply -f - -n $NAMESPACE
           
           echo "✅ Gradio deployment applied"
       
       - name: Apply services with sessionAffinity
         run: |
-          kubectl apply -f k3s/manifests/services.yaml \
-            --namespace=$NAMESPACE
+          kubectl apply -f k3s/manifests/services.yaml -n $NAMESPACE
           echo "✅ Services applied (with sessionAffinity for MCP)"
       
       - name: Verify all deployments
         run: |
           echo "Waiting for deployments..."
-          kubectl rollout status deployment/g3-app \
+          kubectl rollout status deployment/mcp-server \
             --namespace=$NAMESPACE \
             --timeout=300s
-          kubectl rollout status deployment/fastapi-app \
+          kubectl rollout status deployment/fastapi-server \
             --namespace=$NAMESPACE \
             --timeout=300s
-          kubectl rollout status deployment/gradio-app \
+          kubectl rollout status deployment/gradio-agent \
             --namespace=$NAMESPACE \
             --timeout=300s
           
@@ -222,4 +221,4 @@ jobs:
           echo "Access points:"
           echo "  FastAPI: http://datalab.myconnectech.fr:30800"
           echo "  Gradio: http://datalab.myconnectech.fr:30786"
-          echo "  MCP (internal): mcp-service.expert-immo.svc.cluster.local:8001"
+          echo "  MCP (internal): mcp-service.g3-immo.svc.cluster.local:8001"
