@@ -29,7 +29,8 @@ class RealEstateAgent:
             Tu peux aussi utiliser les outils de géocodage 'geocoding_search' et 'reverse_geocoding'
             pour trouver des informations précises sur les adresses.
             Les données de transactions immobilières sont stockées dans une base de données SQL (seule les données du 2 janvier au 30 juin 2025 sont disponibles), tu peux interagir avec elle via les outils 'get_database_schema' et 'execute_sql', elles peuvent être utilisées pour fournir des réponses précises basées sur les données historiques, proche des biens immobiliers similaires.
-            Réponds en français.
+            Récupère toujours d'abord les informations de la base de données avec `get_database_schema` avant d'essayer d'executer une requête SQL avec `execute_sql`.
+            Réponds en français. 
             """
         )
         self.tools = get_mcp_tools()
