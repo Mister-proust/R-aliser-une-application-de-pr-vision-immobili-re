@@ -37,11 +37,11 @@ templates = Jinja2Templates(directory="src/app/templates")
 
 @app.get("/", response_class=HTMLResponse)
 async def home(request: Request):
-    return templates.TemplateResponse(request, "home.html")
+    return templates.TemplateResponse(request, "home.html", {"gradio_host": config.gradio_host, "gradio_port": config.gradio_port})
 
 @app.get("/prediction", response_class=HTMLResponse)
 async def index(request: Request):
-    return templates.TemplateResponse(request, "index.html")
+    return templates.TemplateResponse(request, "index.html", {"gradio_host": config.gradio_host, "gradio_port": config.gradio_port})
 
 
 @app.get("/shap", response_class=HTMLResponse)

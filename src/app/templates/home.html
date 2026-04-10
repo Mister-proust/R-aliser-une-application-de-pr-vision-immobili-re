@@ -558,7 +558,7 @@
         import { Client } from "https://cdn.jsdelivr.net/npm/@gradio/client/dist/index.min.js";
         
         async function initChatWidget() {
-            const gradioAppUrl = "http://127.0.0.1:7860/"; 
+            const gradioAppUrl = "http://{{gradio_host}}:{{gradio_port}}/"; 
             
             let client;
             try {
